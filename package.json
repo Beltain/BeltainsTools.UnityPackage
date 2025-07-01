@@ -1,7 +1,7 @@
 {
   "name": "com.beltainjordaan.beltainstools",
   "version": "1.0.0",
-  "displayName": "Beltains Tools",
+  "displayName": "BeltainsTools",
   "description": "A collection of helpful tools/utilities/extensions for a more enjoyable unity experience.",
   "unity": "6000.0",
   "dependencies": {
