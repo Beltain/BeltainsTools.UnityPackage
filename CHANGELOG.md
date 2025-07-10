@@ -1,4 +1,4 @@
-## [1.0.1] - [01/07/25]
+## [1.0.1] - [10/07/25]
 ### Housekeeping, tidying of namespaces mainly focussing on the Utilities
 
 ## [1.0.0] - [01/07/25]
