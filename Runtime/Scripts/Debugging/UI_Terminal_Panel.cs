@@ -133,7 +133,7 @@ namespace BeltainsTools.Debugging
 
         void FocusInput()
         {
-            FrameDelayedAction.Execute(() =>
+            Coroutines.FrameDelayedAction.Execute(() =>
             {
                 m_InputField.Select();
                 m_InputField.ActivateInputField();
@@ -268,8 +268,8 @@ namespace BeltainsTools.Debugging
             }
         }
 
-        void SetAutofillOptions<T>(string partialWord, IEnumerable<T> items, System.Func<T, string> wordSelector) => SetAutofillOptions(AutoComplete.GetWordCompletionCandidateWords(partialWord, items, wordSelector).ToArray());
-        void SetAutofillOptions(string partialWord, IEnumerable<string> items) => SetAutofillOptions(AutoComplete.GetWordCompletionCandidates(partialWord, items).ToArray());
+        void SetAutofillOptions<T>(string partialWord, IEnumerable<T> items, System.Func<T, string> wordSelector) => SetAutofillOptions(StringUtilities.AutoComplete.GetWordCompletionCandidateWords(partialWord, items, wordSelector).ToArray());
+        void SetAutofillOptions(string partialWord, IEnumerable<string> items) => SetAutofillOptions(StringUtilities.AutoComplete.GetWordCompletionCandidates(partialWord, items).ToArray());
         void ClearAutofillOptions() => SetAutofillOptions(new string[0]);
         void SetAutofillOptions(string[] suggestions)
         {

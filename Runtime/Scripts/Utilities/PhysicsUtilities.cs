@@ -1,10 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-namespace BeltainsTools
+namespace BeltainsTools.Utilities
 {
-    public static class PhysicsExtended
+    public static class PhysicsUtilities
     {
         public static int RaycastNonAlloc(Ray ray, ref RaycastHit[] results, float maxDistance, int layerMask) => RaycastNonAlloc(ray, ref results, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
         public static int RaycastNonAlloc(Ray ray, ref RaycastHit[] results, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)

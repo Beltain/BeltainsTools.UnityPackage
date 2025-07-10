@@ -60,7 +60,7 @@ public class DebugCommandAttribute : System.Attribute
             paramType = System.Enum.GetUnderlyingType(paramType);
         }
 
-        return Parser.TryParse(paramString, paramType, out parsedParam);
+        return StringUtilities.TryParse(paramString, paramType, out parsedParam);
     }
 
     public static string[] GetAutofillSuggestionsFor(System.Type type)

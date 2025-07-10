@@ -3,7 +3,9 @@
     "rootNamespace": "BeltainsTools",
     "references": [
         "GUID:6055be8ebefd69e48b49212b09b47b2f",
-        "GUID:75469ad4d38634e559750d17036d5f7c"
+        "GUID:75469ad4d38634e559750d17036d5f7c",
+        "GUID:0ab2c1ffe34e78944b752c2ae6c41dad",
+        "GUID:52de067e2a624b344b06ee04f4995655"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

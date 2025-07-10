@@ -3,12 +3,10 @@ using System.Reflection;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace BeltainsTools
+namespace BeltainsTools.Utilities
 {
-    public static class Reflection
+    public static class ReflectionUtilities
     {
-        //Courtesy of https://stackoverflow.com/users/767890/inbetween. 
-        //https://stackoverflow.com/questions/48266214/get-all-sub-classes-of-generic-abstract-base-class
         public static IEnumerable<Type> GetAllDescendantsOf(this Assembly assembly, Type genericTypeDefinition)
         {
             IEnumerable<Type> GetAllAscendants(Type t)
