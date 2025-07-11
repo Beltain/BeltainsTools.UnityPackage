@@ -7,7 +7,7 @@ namespace BeltainsTools.Utilities
 {
     public static class ReflectionUtilities
     {
-        public static IEnumerable<Type> GetAllDescendantsOf(this Assembly assembly, Type genericTypeDefinition)
+        public static IEnumerable<Type> GetAllDescendantsOf(Assembly assembly, Type genericTypeDefinition)
         {
             IEnumerable<Type> GetAllAscendants(Type t)
             {

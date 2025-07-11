@@ -1,3 +1,4 @@
+using BeltainsTools.Utilities;
 using UnityEngine;
 
 namespace BeltainsTools.Tweens
@@ -46,10 +47,10 @@ namespace BeltainsTools.Tweens
                     m_LerpCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
                     break;
                 case CurveTypes.EaseIn:
-                    m_LerpCurve = AnimationCurveExtensions.EaseIn(0f, 0f, 1f, 1f);
+                    m_LerpCurve = AnimationCurveUtilities.EaseIn(0f, 0f, 1f, 1f);
                     break;
                 case CurveTypes.EaseOut:
-                    m_LerpCurve = AnimationCurveExtensions.EaseOut(0f, 0f, 1f, 1f);
+                    m_LerpCurve = AnimationCurveUtilities.EaseOut(0f, 0f, 1f, 1f);
                     break;
             }
         }

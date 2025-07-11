@@ -35,5 +35,37 @@ namespace BeltainsTools.Utilities
                 return false;
             }
         }
+
+        public static void SetRectTransformParent(RectTransform rectTransform, RectTransform uIParentTransform) => SetRectTransformParent(rectTransform, uIParentTransform, false);
+        public static void SetRectTransformParent(RectTransform rectTransform, RectTransform uIParentTransform, bool worldPositionStays)
+        {
+            rectTransform.position = worldPositionStays ? rectTransform.position : uIParentTransform.position;
+
+            // v Was the recommended functionality according to stack overflow, but seems to just break configuration of anchors with no clear purpose?
+            //rectTransform.anchorMin = Vector2.zero;
+            //rectTransform.anchorMax = Vector2.one;
+            //rectTransform.pivot = Vector2.one / 2f;
+
+            //rectTransform.sizeDelta = uIParentTransform.rect.size;
+            rectTransform.SetParent(uIParentTransform.transform, worldPositionStays);
+        }
+
+        public static void SetAnchorsStretched(RectTransform rectTransform, RectTransform parent = null)
+        {
+            if (parent != null)
+                rectTransform.SetParent(parent);
+            rectTransform.anchorMin = Vector2.zero;
+            rectTransform.anchorMax = Vector2.one;
+            rectTransform.anchoredPosition = Vector2.zero;
+            rectTransform.sizeDelta = Vector2.zero;
+        }
+
+        public static Vector3 GetWorldCenter(RectTransform rectTransform)
+        {
+            Rect rect = rectTransform.rect;
+            Vector3 pivotToCenter = (rect.size * 0.5f) - new Vector2(rect.width * rectTransform.pivot.x, rect.height * rectTransform.pivot.y);
+            Vector3 worldCenter = rectTransform.position + pivotToCenter;
+            return worldCenter;
+        }
     }
 }

@@ -22,6 +22,19 @@ namespace BeltainsTools.Utilities
             }
         }
 
+        public static bool GetIsEmpty(string str)
+        {
+            return str == string.Empty;
+        }
+
+        public static bool GetIsNullOrEmpty(string str)
+        {
+            return str == null || str == string.Empty;
+        }
+
+
+
+
         public static class AutoComplete
         {
             public static IEnumerable<string> GetWordCompletionCandidateWords<T>(string partialWord, IEnumerable<T> items, System.Func<T, string> wordSelector) => GetWordCompletionCandidates(partialWord, items, wordSelector).Select(wordSelector);
