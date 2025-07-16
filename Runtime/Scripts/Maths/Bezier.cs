@@ -20,7 +20,7 @@ namespace BeltainsTools.Maths
         public Vector3 Evaluate(float t)
         {
             t = Mathf.Clamp01(t);
-            return Maths.MathB.CubicLerp(Point_A, Poll_A, Poll_B, Point_B, t);
+            return MathB.CubicLerp(Point_A, Poll_A, Poll_B, Point_B, t);
         }
     }
 }

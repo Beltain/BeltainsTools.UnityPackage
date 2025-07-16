@@ -23,5 +23,7 @@ namespace BeltainsTools
         public static Vector3 ToVector3XY(this Vector2 vector) => new Vector3(vector.x, vector.y, 0f);
         public static Vector3 ToVector3XZ(this Vector2 vector) => new Vector3(vector.x, 0f, vector.y);
         public static Vector3 ToVector3YZ(this Vector2 vector) => new Vector3(0f, vector.x, vector.y);
+
+        public static Vector2 Perpendicularise(this Vector2 vector, bool clockwise = true) => (clockwise ? 1f : -1f) * new Vector2(vector.y, -vector.x);
     }
 }

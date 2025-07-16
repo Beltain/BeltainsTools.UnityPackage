@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-namespace BeltainsTools.Maths
+namespace BeltainsTools
 {
     /// <summary>Class for generally useful mathematical operations</summary>
     public static class MathB
@@ -16,6 +16,24 @@ namespace BeltainsTools.Maths
         public static Vector3 CubicLerp(Vector3 pointA, Vector3 pointB, Vector3 pointC, Vector3 pointD, float t)
         {
             return Vector3.Lerp(QuadraticLerp(pointA, pointB, pointC, t), QuadraticLerp(pointB, pointC, pointD, t), t);
+        }
+
+        /// <inheritdoc cref="BeltainsTools.Utilities.LineUtilities.GetAreDirectionsParallel(Vector2, Vector2, Vector2, Vector2)"/>
+        public static bool GetAreDirectionsParallel(Vector2 originA, Vector2 directionA, Vector2 originB, Vector2 directionB)
+        {
+            return BeltainsTools.Utilities.LineUtilities.GetAreDirectionsParallel(originA, directionA, originB, directionB);
+        }
+
+        /// <inheritdoc cref="BeltainsTools.Utilities.LineUtilities.GetDirectionsIntersection(Vector2, Vector2, Vector2, Vector2, out Vector2)"/>
+        public static bool GetDirectionsIntersection(Vector2 originA, Vector2 directionA, Vector2 originB, Vector2 directionB, out Vector2 intersection, bool ensureCrossesInDirection = false)
+        {
+            return BeltainsTools.Utilities.LineUtilities.GetDirectionsIntersection(originA, directionA, originB, directionB, out intersection, ensureCrossesInDirection);
+        }
+
+        /// <inheritdoc cref="BeltainsTools.Utilities.LineUtilities.GetLinesIntersection(Vector2, Vector2, Vector2, Vector2, out Vector2)"/>
+        public static bool GetLinesIntersection(Vector2 lineAStart, Vector2 lineAEnd, Vector2 lineBStart, Vector2 lineBEnd, out Vector2 intersection)
+        {
+            return BeltainsTools.Utilities.LineUtilities.GetLinesIntersection(lineAStart, lineAEnd, lineBStart, lineBEnd, out intersection);
         }
     }
 }
