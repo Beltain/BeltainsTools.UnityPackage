@@ -33,13 +33,12 @@ namespace BeltainsTools.UI
             /// </summary>
             public bool IsStub;
 
-            public ConnectingSegment(Vector2 startPoint, Vector2 endPoint, float thickness)
+            public ConnectingSegment(Vector2 startPoint, Vector2 endPoint, float nodeRadius)
             {
                 Vector2 fullDelta = endPoint - startPoint;
                 Vector2 direction = fullDelta.normalized;
 
                 float fullDistance = fullDelta.magnitude;
-                float nodeRadius = thickness * 0.5f;
 
                 float drawRadius = Mathf.Min(nodeRadius, fullDistance / 2f); // clamped radius away from nodes at which to draw segments
                 Vector2 start = startPoint + direction * drawRadius;
@@ -69,16 +68,14 @@ namespace BeltainsTools.UI
                 /// <summary>If true, this line should be treated as a single point instead.</summary>
                 public bool IsStub;
 
-                public CornerLine(ref ConnectingSegment startSegment, ref ConnectingSegment endSegment, bool left)
+                public CornerLine(ref ConnectingSegment startSegment, ref ConnectingSegment endSegment, bool left, Vector2 cornerOrigin, float cornerRadius)
                 {
                     ref Vector2 startSegmentEnd = ref (left ? ref startSegment.EndL : ref startSegment.EndR);
-                    ref Vector2 startSegmentStart = ref (left ? ref startSegment.StartL : ref startSegment.StartR);
                     ref Vector2 endSegmentStart = ref (left ? ref endSegment.StartL : ref endSegment.StartR);
-                    ref Vector2 endSegmentEnd = ref (left ? ref endSegment.EndL : ref endSegment.EndR);
-                    this = new CornerLine(ref startSegmentEnd, Vector3.Distance(startSegmentEnd, startSegmentStart), startSegment.Direction, ref endSegmentStart, Vector3.Distance(endSegmentStart, endSegmentEnd), -endSegment.Direction);
+                    this = new CornerLine(ref startSegmentEnd, startSegment.Direction, ref endSegmentStart, -endSegment.Direction, cornerOrigin, cornerRadius);
                 }
 
-                public CornerLine(ref Vector2 startPoint, float startMaxSlide, Vector2 startDirection, ref Vector2 endPoint, float endMaxSlide, Vector2 endDirection)
+                public CornerLine(ref Vector2 startPoint, Vector2 startDirection, ref Vector2 endPoint, Vector2 endDirection, Vector2 cornerOrigin, float cornerRadius)
                 {
                     StartPt = startPoint;
                     EndPt = endPoint;
@@ -92,12 +89,9 @@ namespace BeltainsTools.UI
                     else if (MathB.GetDirectionsIntersection(startPoint, -startDirection, endPoint, -endDirection, out PolePt, ensureCrossesInDirection: true))
                     {
                         IsStub = true;
+                        PolePt = (StartPt + EndPt) * 0.5f; // pole is mid point
                         StartPt = PolePt;   // if we found the intersection in the second direction, then we can treat this line as a single point
                         EndPt = PolePt;     // and set both start and end points to the intersection point
-
-                        // if it's a stub, we must adjust the segment end/start points to cautorise the corners together
-                        startPoint = PolePt;
-                        endPoint = PolePt;
                     }
                     else
                     {
@@ -105,16 +99,19 @@ namespace BeltainsTools.UI
                         IsStub = false;
                         PolePt = (StartPt + EndPt) * 0.5f; // pole is mid point
                     }
+
+                    Vector2 poleOriginOffset = PolePt - cornerOrigin;
+                    PolePt = cornerOrigin + poleOriginOffset.normalized * Mathf.Clamp(poleOriginOffset.magnitude, cornerRadius, cornerRadius * 2); // make sure our pole isn't too far away
                 }
             }
 
             public CornerLine LeftLine;
             public CornerLine RightLine;
 
-            public CornerSegment(ref ConnectingSegment startSegment, ref ConnectingSegment endSegment)
+            public CornerSegment(ref ConnectingSegment startSegment, ref ConnectingSegment endSegment, Vector2 cornerOrigin, float cornerRadius)
             {
-                LeftLine = new CornerLine(ref startSegment, ref endSegment, left: true);
-                RightLine = new CornerLine(ref startSegment, ref endSegment, left: false);
+                LeftLine = new CornerLine(ref startSegment, ref endSegment, left: true, cornerOrigin, cornerRadius);
+                RightLine = new CornerLine(ref startSegment, ref endSegment, left: false, cornerOrigin, cornerRadius);
             }
         }
 
@@ -149,12 +146,28 @@ namespace BeltainsTools.UI
                     float startT = i * cornerStep;
                     float endT = (i + 1) * cornerStep;
 
-                    cornerSegmentDrawVerts[0] = MathB.QuadraticLerp(segment.LeftLine.StartPt, segment.LeftLine.PolePt, segment.LeftLine.EndPt, startT);
-                    cornerSegmentDrawVerts[1] = MathB.QuadraticLerp(segment.LeftLine.StartPt, segment.LeftLine.PolePt, segment.LeftLine.EndPt, endT);
-                    cornerSegmentDrawVerts[2] = MathB.QuadraticLerp(segment.RightLine.StartPt, segment.RightLine.PolePt, segment.RightLine.EndPt, endT);
-                    cornerSegmentDrawVerts[3] = MathB.QuadraticLerp(segment.RightLine.StartPt, segment.RightLine.PolePt, segment.RightLine.EndPt, startT);
-
-                    DrawQuad(cornerSegmentDrawVerts[0], cornerSegmentDrawVerts[1], cornerSegmentDrawVerts[2], cornerSegmentDrawVerts[3], vh);
+                    if (segment.LeftLine.IsStub)
+                    {
+                        cornerSegmentDrawVerts[0] = MathB.QuadraticLerp(segment.RightLine.StartPt, segment.RightLine.PolePt, segment.RightLine.EndPt, endT);
+                        cornerSegmentDrawVerts[1] = MathB.QuadraticLerp(segment.RightLine.StartPt, segment.RightLine.PolePt, segment.RightLine.EndPt, startT);
+                        cornerSegmentDrawVerts[2] = segment.LeftLine.PolePt; // right line is a stub, so just use the pole point
+                        DrawTri(cornerSegmentDrawVerts[0], cornerSegmentDrawVerts[1], cornerSegmentDrawVerts[2], vh);
+                    }
+                    else if (segment.RightLine.IsStub)
+                    {
+                        cornerSegmentDrawVerts[0] = MathB.QuadraticLerp(segment.LeftLine.StartPt, segment.LeftLine.PolePt, segment.LeftLine.EndPt, startT);
+                        cornerSegmentDrawVerts[1] = MathB.QuadraticLerp(segment.LeftLine.StartPt, segment.LeftLine.PolePt, segment.LeftLine.EndPt, endT);
+                        cornerSegmentDrawVerts[2] = segment.RightLine.PolePt; // right line is a stub, so just use the pole point
+                        DrawTri(cornerSegmentDrawVerts[0], cornerSegmentDrawVerts[1], cornerSegmentDrawVerts[2], vh);
+                    }
+                    else
+                    {
+                        cornerSegmentDrawVerts[0] = MathB.QuadraticLerp(segment.LeftLine.StartPt, segment.LeftLine.PolePt, segment.LeftLine.EndPt, startT);
+                        cornerSegmentDrawVerts[1] = MathB.QuadraticLerp(segment.LeftLine.StartPt, segment.LeftLine.PolePt, segment.LeftLine.EndPt, endT);
+                        cornerSegmentDrawVerts[2] = MathB.QuadraticLerp(segment.RightLine.StartPt, segment.RightLine.PolePt, segment.RightLine.EndPt, endT);
+                        cornerSegmentDrawVerts[3] = MathB.QuadraticLerp(segment.RightLine.StartPt, segment.RightLine.PolePt, segment.RightLine.EndPt, startT);
+                        DrawQuad(cornerSegmentDrawVerts[0], cornerSegmentDrawVerts[1], cornerSegmentDrawVerts[2], cornerSegmentDrawVerts[3], vh);
+                    }
                 }
             }
 
@@ -171,13 +184,15 @@ namespace BeltainsTools.UI
             if (!IsValidLine)
                 return;
 
+            float nodeRadius = m_Thickness * 0.5f;
+
             // generate connecting segments data
             for (int i = 0; i < m_ConnectingSegments.Length; i++)
-                m_ConnectingSegments[i] = new ConnectingSegment(m_Points[i], m_Points[i + 1], m_Thickness);
+                m_ConnectingSegments[i] = new ConnectingSegment(m_Points[i], m_Points[i + 1], nodeRadius);
 
             // generate corner segments data
             for (int i = 0; i < m_CornerSegments.Length; i++)
-                m_CornerSegments[i] = new CornerSegment(ref m_ConnectingSegments[i], ref m_ConnectingSegments[i + 1]);
+                m_CornerSegments[i] = new CornerSegment(ref m_ConnectingSegments[i], ref m_ConnectingSegments[i + 1], m_Points[i + 1], nodeRadius);
 
             // generate end-cap segments data
             // ...
