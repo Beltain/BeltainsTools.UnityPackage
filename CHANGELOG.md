@@ -1,3 +1,7 @@
+## [1.0.3] - [17/07/25]
+### Added Simple UILineRenderer
+* Added new UILineRenderer MaskableGraphic. At the moment this is a simple UI implementation of something like Unity's LineRenderer. Some basic optimisation in there, but will probably revisit to improve further.
+
 ## [1.0.2] - [11/07/25]
 ### More Housekeeping
 * Organised more utilities into their own utilities scripts

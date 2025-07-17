@@ -1,20 +1,25 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace BeltainsTools.UI
 {
-    public class UILineRenderer : Graphic
+    public class UILineRenderer : MaskableGraphic
     {
         [SerializeField]
         Vector2[] m_Points = new Vector2[0];
         [SerializeField]
         float m_Thickness = 0.5f;
-        [SerializeField, Tooltip("Number of segments to use when drawing corners, more segments = smoother corners")]
-        int m_CornerDetail = 8; 
+        [SerializeField, Tooltip("Number of segments to use per 90 degrees when drawing corners, more segments = smoother corners")]
+        int m_CornerDetail = 8;
+        [SerializeField]
+        bool m_IsLoop = false;
 
 
         ConnectingSegment[] m_ConnectingSegments;
         CornerSegment[] m_CornerSegments;
+        EndCapSegment[] m_EndCapSegments = new EndCapSegment[2]; // 2 end-caps, one for each end of the line
+        
 
         bool IsValidLine => m_ConnectingSegments != null && m_ConnectingSegments.Length > 0;
 
@@ -52,6 +57,14 @@ namespace BeltainsTools.UI
                 EndL = end - rOffset;
                 EndR = end + rOffset;
                 IsStub = fullDistance <= nodeRadius * 2f;
+            }
+
+            public void Draw(VertexHelper vh, Color color)
+            {
+                if (IsStub)
+                    return; // too small!! No espace for mother in law!
+
+                vh.DrawQuad(StartL, EndL, EndR, StartR, color);
             }
         }
 
@@ -107,12 +120,107 @@ namespace BeltainsTools.UI
 
             public CornerLine LeftLine;
             public CornerLine RightLine;
+            public int Detail;
 
-            public CornerSegment(ref ConnectingSegment startSegment, ref ConnectingSegment endSegment, Vector2 cornerOrigin, float cornerRadius)
+            public CornerSegment(ref ConnectingSegment startSegment, ref ConnectingSegment endSegment, Vector2 cornerOrigin, float cornerRadius, int detail)
             {
                 LeftLine = new CornerLine(ref startSegment, ref endSegment, left: true, cornerOrigin, cornerRadius);
                 RightLine = new CornerLine(ref startSegment, ref endSegment, left: false, cornerOrigin, cornerRadius);
+
+                float angle = 360 - Vector2.Angle(-startSegment.Direction, endSegment.Direction);
+                Detail = Mathf.Max(1, Mathf.FloorToInt(angle / 90f * detail)); // number of segments to draw for this corner segment, based on the angle between the two lines
             }
+
+
+            static Vector2[] cornerSegmentDrawVerts = new Vector2[4]; // max 4 for quads
+            public void Draw(VertexHelper vh, Color color)
+            {
+                float cornerStep = 1f / Detail;
+
+                // draw the quads that make up the corner segmenets,
+                // by quadratically interpolating between the start and end points of the left and right lines
+                for (int i = 0; i < Detail; i++)
+                {
+                    float startT = i * cornerStep;
+                    float endT = (i + 1) * cornerStep;
+
+                    if (LeftLine.IsStub)
+                    {
+                        cornerSegmentDrawVerts[0] = MathB.QuadraticLerp(RightLine.StartPt, RightLine.PolePt, RightLine.EndPt, endT);
+                        cornerSegmentDrawVerts[1] = MathB.QuadraticLerp(RightLine.StartPt, RightLine.PolePt, RightLine.EndPt, startT);
+                        cornerSegmentDrawVerts[2] = LeftLine.PolePt; // right line is a stub, so just use the pole point
+                        vh.DrawTri(cornerSegmentDrawVerts[0], cornerSegmentDrawVerts[1], cornerSegmentDrawVerts[2], color);
+                    }
+                    else if (RightLine.IsStub)
+                    {
+                        cornerSegmentDrawVerts[0] = MathB.QuadraticLerp(LeftLine.StartPt, LeftLine.PolePt, LeftLine.EndPt, startT);
+                        cornerSegmentDrawVerts[1] = MathB.QuadraticLerp(LeftLine.StartPt, LeftLine.PolePt, LeftLine.EndPt, endT);
+                        cornerSegmentDrawVerts[2] = RightLine.PolePt; // right line is a stub, so just use the pole point
+                        vh.DrawTri(cornerSegmentDrawVerts[0], cornerSegmentDrawVerts[1], cornerSegmentDrawVerts[2], color);
+                    }
+                    else
+                    {
+                        cornerSegmentDrawVerts[0] = MathB.QuadraticLerp(LeftLine.StartPt, LeftLine.PolePt, LeftLine.EndPt, startT);
+                        cornerSegmentDrawVerts[1] = MathB.QuadraticLerp(LeftLine.StartPt, LeftLine.PolePt, LeftLine.EndPt, endT);
+                        cornerSegmentDrawVerts[2] = MathB.QuadraticLerp(RightLine.StartPt, RightLine.PolePt, RightLine.EndPt, endT);
+                        cornerSegmentDrawVerts[3] = MathB.QuadraticLerp(RightLine.StartPt, RightLine.PolePt, RightLine.EndPt, startT);
+                        vh.DrawQuad(cornerSegmentDrawVerts[0], cornerSegmentDrawVerts[1], cornerSegmentDrawVerts[2], cornerSegmentDrawVerts[3], color);
+                    }
+                }
+            }
+        }
+
+        /// <summary>Structure containing the definition of the end-cap segment of the line, which is a segment that extends from the end of a <see cref="ConnectingSegment"/> towards the origin point of the line</summary>
+        struct EndCapSegment // TODO maybe add rounding in the future?
+        {
+            public Vector2 StartL;
+            public Vector2 StartR;
+            public Vector2 EndL;
+            public Vector2 EndR;
+
+            public EndCapSegment(ConnectingSegment connectingSegment, Vector2 pointOrigin, float nodeRadius)
+            {
+                bool isStartOfSegment = Vector2.Distance(connectingSegment.StartL, pointOrigin) < Vector2.Distance(connectingSegment.EndL, pointOrigin);
+                if (isStartOfSegment)
+                {
+                    EndL = connectingSegment.StartL;
+                    EndR = connectingSegment.StartR;
+                    StartL = EndL - connectingSegment.Direction * nodeRadius;
+                    StartR = EndR - connectingSegment.Direction * nodeRadius;
+                }
+                else
+                {
+                    EndL = connectingSegment.EndL;
+                    EndR = connectingSegment.EndR;
+                    StartL = EndL + connectingSegment.Direction * nodeRadius;
+                    StartR = EndR + connectingSegment.Direction * nodeRadius;
+                }
+            }
+
+            public void Draw(VertexHelper vh, Color color)
+            {
+                vh.DrawQuad(StartL, EndL, EndR, StartR, color);
+            }
+        }
+
+
+        public void SetPoints(Vector2[] points)
+        {
+            Array.Resize(ref m_Points, points.Length);
+            for (int i = 0; i < points.Length; i++)
+                m_Points[i] = points[i];
+            RecalculateSegmentsData();
+        }
+
+        public void SetPoint(int pointIndex, Vector2 point)
+        {
+            m_Points[pointIndex] = point;
+            RecalculateSegmentsData();
+        }
+
+        public Vector2[] GetPoints()
+        {
+            return m_Points;
         }
 
 
@@ -120,66 +228,38 @@ namespace BeltainsTools.UI
         {
             vh.Clear();
 
-            RecalculateSegmentsData(); // TODO: Optimise to not call every mesh population!!
+            if (Application.isEditor && !Application.isPlaying)
+                RecalculateSegmentsData();
 
             if (!IsValidLine)
                 return;
 
             // draw connecting segments, no end-caps or corners to begin with
             foreach (ConnectingSegment segment in m_ConnectingSegments)
-            {
-                if (segment.IsStub)
-                    continue; // too small!! No espace for mother in law!
-
-                DrawQuad(segment.StartL, segment.EndL, segment.EndR, segment.StartR, vh);
-            }
+                segment.Draw(vh, color);
 
             // draw corners segments
-            float cornerStep = 1f / m_CornerDetail;
-            Vector2[] cornerSegmentDrawVerts = new Vector2[4]; // max 4 for quads
             foreach (CornerSegment segment in m_CornerSegments)
-            {
-                // draw the quads that make up the corner segmenets,
-                // by quadratically interpolating between the start and end points of the left and right lines
-                for (int i = 0; i < m_CornerDetail; i++)
-                {
-                    float startT = i * cornerStep;
-                    float endT = (i + 1) * cornerStep;
-
-                    if (segment.LeftLine.IsStub)
-                    {
-                        cornerSegmentDrawVerts[0] = MathB.QuadraticLerp(segment.RightLine.StartPt, segment.RightLine.PolePt, segment.RightLine.EndPt, endT);
-                        cornerSegmentDrawVerts[1] = MathB.QuadraticLerp(segment.RightLine.StartPt, segment.RightLine.PolePt, segment.RightLine.EndPt, startT);
-                        cornerSegmentDrawVerts[2] = segment.LeftLine.PolePt; // right line is a stub, so just use the pole point
-                        DrawTri(cornerSegmentDrawVerts[0], cornerSegmentDrawVerts[1], cornerSegmentDrawVerts[2], vh);
-                    }
-                    else if (segment.RightLine.IsStub)
-                    {
-                        cornerSegmentDrawVerts[0] = MathB.QuadraticLerp(segment.LeftLine.StartPt, segment.LeftLine.PolePt, segment.LeftLine.EndPt, startT);
-                        cornerSegmentDrawVerts[1] = MathB.QuadraticLerp(segment.LeftLine.StartPt, segment.LeftLine.PolePt, segment.LeftLine.EndPt, endT);
-                        cornerSegmentDrawVerts[2] = segment.RightLine.PolePt; // right line is a stub, so just use the pole point
-                        DrawTri(cornerSegmentDrawVerts[0], cornerSegmentDrawVerts[1], cornerSegmentDrawVerts[2], vh);
-                    }
-                    else
-                    {
-                        cornerSegmentDrawVerts[0] = MathB.QuadraticLerp(segment.LeftLine.StartPt, segment.LeftLine.PolePt, segment.LeftLine.EndPt, startT);
-                        cornerSegmentDrawVerts[1] = MathB.QuadraticLerp(segment.LeftLine.StartPt, segment.LeftLine.PolePt, segment.LeftLine.EndPt, endT);
-                        cornerSegmentDrawVerts[2] = MathB.QuadraticLerp(segment.RightLine.StartPt, segment.RightLine.PolePt, segment.RightLine.EndPt, endT);
-                        cornerSegmentDrawVerts[3] = MathB.QuadraticLerp(segment.RightLine.StartPt, segment.RightLine.PolePt, segment.RightLine.EndPt, startT);
-                        DrawQuad(cornerSegmentDrawVerts[0], cornerSegmentDrawVerts[1], cornerSegmentDrawVerts[2], cornerSegmentDrawVerts[3], vh);
-                    }
-                }
-            }
+                segment.Draw(vh, color);
 
             // draw end-cap segments
-            // ...
+            foreach (EndCapSegment segment in m_EndCapSegments)
+                segment.Draw(vh, color);
         }
 
         /// <summary>Calculate and cache the line segment data for the current <see cref="m_Points"/> for more efficient updates</summary>
         void RecalculateSegmentsData()
-        {
-            m_ConnectingSegments = new ConnectingSegment[Mathf.Max(0, m_Points.Length - 1)];
-            m_CornerSegments = new CornerSegment[Mathf.Max(0, m_ConnectingSegments.Length - 1)];
+        {   
+            int pointCount = m_Points.Length;
+            bool isLoop = m_IsLoop && pointCount > 2;
+
+            int connectingCount = Mathf.Max(0, isLoop ? pointCount : pointCount - 1);
+            int cornerCount = Mathf.Max(0, connectingCount - 1 + (isLoop ? 1 : 0));
+            int endCapCount = isLoop ? 0 : 2;
+
+            m_ConnectingSegments = new ConnectingSegment[connectingCount];
+            m_CornerSegments = new CornerSegment[cornerCount];
+            m_EndCapSegments = new EndCapSegment[2]; // always allocate 2 for consistency
 
             if (!IsValidLine)
                 return;
@@ -187,42 +267,34 @@ namespace BeltainsTools.UI
             float nodeRadius = m_Thickness * 0.5f;
 
             // generate connecting segments data
-            for (int i = 0; i < m_ConnectingSegments.Length; i++)
-                m_ConnectingSegments[i] = new ConnectingSegment(m_Points[i], m_Points[i + 1], nodeRadius);
+            for (int i = 0; i < connectingCount; i++)
+            {
+                int startIdx = i;
+                int endIdx = (i + 1) % pointCount;
+                m_ConnectingSegments[i] = new ConnectingSegment(m_Points[startIdx], m_Points[endIdx], nodeRadius);
+            }
 
             // generate corner segments data
-            for (int i = 0; i < m_CornerSegments.Length; i++)
-                m_CornerSegments[i] = new CornerSegment(ref m_ConnectingSegments[i], ref m_ConnectingSegments[i + 1], m_Points[i + 1], nodeRadius);
+            for (int i = 0; i < cornerCount; i++)
+            {
+                int segA = i;
+                int segB = (i + 1) % connectingCount;
+                int cornerIdx = (i + 1) % pointCount;
+                m_CornerSegments[i] = new CornerSegment(ref m_ConnectingSegments[segA], ref m_ConnectingSegments[segB], m_Points[cornerIdx], nodeRadius, m_CornerDetail);
+            }
 
-            // generate end-cap segments data
-            // ...
+            // generate end-cap segments data (only if not loop)
+            if (!isLoop)
+            {
+                m_EndCapSegments[0] = new EndCapSegment(m_ConnectingSegments[0], m_Points[0], nodeRadius);
+                m_EndCapSegments[1] = new EndCapSegment(m_ConnectingSegments[connectingCount - 1], m_Points[pointCount - 1], nodeRadius);
+            }
         }
 
 
-
-
-        void DrawTri(Vector2 p1, Vector2 p2, Vector2 p3, VertexHelper vh)
+        protected override void Awake()
         {
-            int vertIndex = vh.currentVertCount;
-
-            vh.AddVert(p1, color, Vector2.zero);
-            vh.AddVert(p2, color, Vector2.zero);
-            vh.AddVert(p3, color, Vector2.zero);
-
-            vh.AddTriangle(vertIndex, vertIndex + 1, vertIndex + 2);
-        }
-
-        void DrawQuad(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, VertexHelper vh)
-        {
-            int vertIndex = vh.currentVertCount;
-
-            vh.AddVert(p1, color, Vector2.zero);
-            vh.AddVert(p2, color, Vector2.zero);
-            vh.AddVert(p3, color, Vector2.zero);
-            vh.AddVert(p4, color, Vector2.zero);
-
-            vh.AddTriangle(vertIndex, vertIndex + 1, vertIndex + 2);
-            vh.AddTriangle(vertIndex + 2, vertIndex + 3, vertIndex);
+            RecalculateSegmentsData();
         }
     }
 }
