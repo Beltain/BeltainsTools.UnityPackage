@@ -35,5 +35,12 @@ namespace BeltainsTools
         {
             return BeltainsTools.Utilities.LineUtilities.GetLinesIntersection(lineAStart, lineAEnd, lineBStart, lineBEnd, out intersection);
         }
+
+        /// <summary>Returns the normalized value that represents where <paramref name="value"/> falls between <paramref name="a"/> and <paramref name="b"/></summary>
+        public static float InverseLerpUnclamped(float a, float b, float value)
+        {
+            float delta = b - a;
+            return delta.Approximately(0f) ? 0f : (value - a) / delta;
+        }
     }
 }

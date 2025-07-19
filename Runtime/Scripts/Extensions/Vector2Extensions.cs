@@ -25,5 +25,11 @@ namespace BeltainsTools
         public static Vector3 ToVector3YZ(this Vector2 vector) => new Vector3(0f, vector.x, vector.y);
 
         public static Vector2 Perpendicularise(this Vector2 vector, bool clockwise = true) => (clockwise ? 1f : -1f) * new Vector2(vector.y, -vector.x);
+        
+        public static Vector2 ClampAxes01(this Vector2 vector) => ClampAxes(vector, 0f, 1f);
+        /// <summary>Clamp both x and y components to range</summary>
+        public static Vector2 ClampAxes(this Vector2 vector, float axesMinValue, float axesMaxValue) => new Vector2(
+            Mathf.Clamp(vector.x, axesMinValue, axesMaxValue), Mathf.Clamp(vector.y, axesMinValue, axesMaxValue)
+        );
     }
 }

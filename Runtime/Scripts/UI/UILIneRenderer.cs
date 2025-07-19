@@ -6,14 +6,17 @@ namespace BeltainsTools.UI
 {
     public class UILineRenderer : MaskableGraphic
     {
-        [SerializeField]
-        Vector2[] m_Points = new Vector2[0];
-        [SerializeField]
+        [SerializeField, HideInInspector]
         float m_Thickness = 0.5f;
-        [SerializeField, Tooltip("Number of segments to use per 90 degrees when drawing corners, more segments = smoother corners")]
+        [SerializeField, HideInInspector, Tooltip("Number of segments to use per 90 degrees when drawing corners, more segments = smoother corners")]
         int m_CornerDetail = 8;
-        [SerializeField]
+
+        [SerializeField, HideInInspector]
+        Vector2[] m_Points = new Vector2[0];
+        [SerializeField, HideInInspector]
         bool m_IsLoop = false;
+        [SerializeField, HideInInspector, Tooltip("Whether or not points should be calculated relative to the rect of this graphic")]
+        bool m_ArePointsInGraphicSpace = false;
 
 
         ConnectingSegment[] m_ConnectingSegments;
@@ -22,6 +25,9 @@ namespace BeltainsTools.UI
         
 
         bool IsValidLine => m_ConnectingSegments != null && m_ConnectingSegments.Length > 0;
+
+        public int PointCount => m_Points.Length;
+
 
         /// <summary>Structure containing the definition of the bit of the line between two points excluding any '<see cref="CornerSegment"/>s' and 'end-caps'</summary>
         struct ConnectingSegment 
@@ -204,6 +210,14 @@ namespace BeltainsTools.UI
         }
 
 
+        #region Accessors____Accessors____Accessors____Accessors____Accessors____Accessors____Accessors____Accessors____Accessors
+        public void SetPointPositions(Vector2[] pointPositions)
+        {
+            Array.Resize(ref m_Points, pointPositions.Length);
+            for (int i = 0; i < pointPositions.Length; i++)
+                m_Points[i] = InverseTransformPoint(pointPositions[i]);
+            RecalculateSegmentsData();
+        }
         public void SetPoints(Vector2[] points)
         {
             Array.Resize(ref m_Points, points.Length);
@@ -212,16 +226,45 @@ namespace BeltainsTools.UI
             RecalculateSegmentsData();
         }
 
+        public void SetPointPosition(int pointIndex, Vector2 pointPosition)
+            => SetPoint(pointIndex, InverseTransformPoint(pointPosition));
         public void SetPoint(int pointIndex, Vector2 point)
         {
             m_Points[pointIndex] = point;
             RecalculateSegmentsData();
         }
 
-        public Vector2[] GetPoints()
+        public Vector2[] GetPointPositions() => Array.ConvertAll(m_Points, TransformPoint);
+        public Vector2[] GetPoints() => m_Points;
+
+        public Vector2 GetPointPosition(int index) => TransformPoint(GetPoint(index));
+        public Vector2 GetPoint(int index) => m_Points[index];
+
+        /// <inheritdoc cref="TransformPoint(Vector2)">
+        public Vector2 TransformPoint(int pointIndex) => TransformPoint(m_Points[pointIndex]);
+        /// <summary>Convert the point position to a world space position</summary>
+        public Vector2 TransformPoint(Vector2 point) => m_ArePointsInGraphicSpace ? (transform as RectTransform).rect.LerpUnclamped(point) : point;
+
+        /// <summary>Convert the point from world space to a point position</summary>
+        public Vector2 InverseTransformPoint(Vector2 point) => m_ArePointsInGraphicSpace ? (transform as RectTransform).rect.InverseLerpUnclamped(point) : point;
+
+
+        [ContextMenu("ConvertPoints/ToGraphicSpace")]
+        public void ConvertPointsToGraphicSpace()
         {
-            return m_Points;
+            for (int i = 0; i < m_Points.Length; i++)
+                m_Points[i] = (transform as RectTransform).rect.InverseLerpUnclamped(m_Points[i]);
+            RecalculateSegmentsData();
         }
+
+        [ContextMenu("ConvertPoints/FromGraphicSpace")]
+        public void ConvertPointsFromGraphicSpace()
+        {
+            for (int i = 0; i < m_Points.Length; i++)
+                m_Points[i] = (transform as RectTransform).rect.LerpUnclamped(m_Points[i]);
+            RecalculateSegmentsData();
+        }
+        #endregion
 
 
         protected override void OnPopulateMesh(VertexHelper vh)
@@ -250,10 +293,9 @@ namespace BeltainsTools.UI
         /// <summary>Calculate and cache the line segment data for the current <see cref="m_Points"/> for more efficient updates</summary>
         void RecalculateSegmentsData()
         {   
-            int pointCount = m_Points.Length;
-            bool isLoop = m_IsLoop && pointCount > 2;
+            bool isLoop = m_IsLoop && PointCount > 2;
 
-            int connectingCount = Mathf.Max(0, isLoop ? pointCount : pointCount - 1);
+            int connectingCount = Mathf.Max(0, isLoop ? PointCount : PointCount - 1);
             int cornerCount = Mathf.Max(0, connectingCount - 1 + (isLoop ? 1 : 0));
             int endCapCount = isLoop ? 0 : 2;
 
@@ -270,8 +312,9 @@ namespace BeltainsTools.UI
             for (int i = 0; i < connectingCount; i++)
             {
                 int startIdx = i;
-                int endIdx = (i + 1) % pointCount;
-                m_ConnectingSegments[i] = new ConnectingSegment(m_Points[startIdx], m_Points[endIdx], nodeRadius);
+                int endIdx = (i + 1) % PointCount;
+                m_ConnectingSegments[i] = new ConnectingSegment(GetPointPosition(startIdx), GetPointPosition(endIdx), nodeRadius);
+                
             }
 
             // generate corner segments data
@@ -279,15 +322,15 @@ namespace BeltainsTools.UI
             {
                 int segA = i;
                 int segB = (i + 1) % connectingCount;
-                int cornerIdx = (i + 1) % pointCount;
-                m_CornerSegments[i] = new CornerSegment(ref m_ConnectingSegments[segA], ref m_ConnectingSegments[segB], m_Points[cornerIdx], nodeRadius, m_CornerDetail);
+                int cornerIdx = (i + 1) % PointCount;
+                m_CornerSegments[i] = new CornerSegment(ref m_ConnectingSegments[segA], ref m_ConnectingSegments[segB], GetPointPosition(cornerIdx), nodeRadius, m_CornerDetail);
             }
 
             // generate end-cap segments data (only if not loop)
             if (!isLoop)
             {
-                m_EndCapSegments[0] = new EndCapSegment(m_ConnectingSegments[0], m_Points[0], nodeRadius);
-                m_EndCapSegments[1] = new EndCapSegment(m_ConnectingSegments[connectingCount - 1], m_Points[pointCount - 1], nodeRadius);
+                m_EndCapSegments[0] = new EndCapSegment(m_ConnectingSegments[0], GetPointPosition(0), nodeRadius);
+                m_EndCapSegments[1] = new EndCapSegment(m_ConnectingSegments[connectingCount - 1], GetPointPosition(PointCount - 1), nodeRadius);
             }
         }
 
