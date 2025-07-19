@@ -4,6 +4,7 @@ using UnityEngine.UI;
 
 namespace BeltainsTools.UI
 {
+    [RequireComponent(typeof(CanvasRenderer))]
     public class UILineRenderer : MaskableGraphic
     {
         [SerializeField, HideInInspector]

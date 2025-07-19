@@ -1,8 +1,8 @@
 {
   "name": "com.beltainjordaan.beltainstools",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "displayName": "BeltainsTools",
-  "description": "A collection of helpful tools/utilities/extensions for a more enjoyable unity experience.",
+  "description": "A collection of helpful Unity tools, utilities, and extensions for a more enjoyable game dev experience.",
   "unity": "6000.0",
   "dependencies": {
     "com.unity.nuget.newtonsoft-json": "3.2.1",

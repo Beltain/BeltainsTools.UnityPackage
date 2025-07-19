@@ -1,3 +1,9 @@
+## [1.0.4] - [19/07/25]
+### Improvements to UILineRenderer Access
+* Added some accessors and a new editor for the UILineRenderer
+* Added some more Utilities relating to the Rect structure
+* Fixed an issue with the Vector3 RelativeToCameraForward extension that would cause oscillation when used
+
 ## [1.0.3] - [17/07/25]
 ### Added Simple UILineRenderer
 * Added new UILineRenderer MaskableGraphic. At the moment this is a simple UI implementation of something like Unity's LineRenderer. Some basic optimisation in there, but will probably revisit to improve further.

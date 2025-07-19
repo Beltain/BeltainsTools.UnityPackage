@@ -28,8 +28,7 @@ namespace BeltainsTools
         {
             if (cam == null)
                 cam = Camera.main;
-            Quaternion rotationToCameraForward = Quaternion.FromToRotation(Vector3.forward, cam.transform.forward.SetY(0).normalized);
-            return rotationToCameraForward * vector;
+            return Quaternion.LookRotation(cam.transform.forward.SetY(0).normalized) * vector;
         }
     }
 }

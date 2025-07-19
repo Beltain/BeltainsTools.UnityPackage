@@ -474,7 +474,7 @@ namespace BeltainsTools.EventHandling
             }
 
 #if UNITY_EDITOR
-            Debug.Assert(m_Thread == System.Threading.Thread.CurrentThread, "Event thread mismatch (CALL A CODER)");
+            Debug.Assert(m_Thread == System.Threading.Thread.CurrentThread, "Event thread mismatch");
 #endif
 
             m_IterationIndex = k_IterationStart; // index is unsigned so 0xffff will roll over to 0 when incremented
@@ -526,7 +526,7 @@ namespace BeltainsTools.EventHandling
                     Debug.Assert(false, "DelegateIterator<T> only supports 65533 delegates! Convert m_IterationIndex from byte to short to support more");
                 }
 
-                Debug.Assert(m_Thread == System.Threading.Thread.CurrentThread, "Event thread mismatch in Add (CALL A CODER)");
+                Debug.Assert(m_Thread == System.Threading.Thread.CurrentThread, "Event thread mismatch in Add");
 #endif // UNITY_EDITOR				
 
                 m_Delegates.Add(_delegate);
@@ -540,7 +540,7 @@ namespace BeltainsTools.EventHandling
             if (_delegate != null)
             {
 #if UNITY_EDITOR
-                Debug.Assert(m_Thread == System.Threading.Thread.CurrentThread, "Event thread mismatch in Remove (CALL A CODER)");
+                Debug.Assert(m_Thread == System.Threading.Thread.CurrentThread, "Event thread mismatch in Remove");
 #endif // UNITY_EDITOR
 
                 // find it
