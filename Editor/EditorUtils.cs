@@ -223,24 +223,27 @@ namespace BeltainsTools.Editor
         }
 
         /// <summary>Instantiate a preset prefab from a given path and menu command context (right click menu in heirarchy)</summary>
-        public static void CreatePresetFromPrefabPath(MenuCommand menuCommand, string path)
+        public static void CreatePresetFromPrefabPath(MenuCommand menuCommand, string path, string altPath, bool unpackPrefab = true)
         {
-            // first try load from 'package' path
-
-            // then try load from 'assets' path
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            d.AssertFormat(prefab != null, "Prefab for editor preset not found at path when trying to create through menu item! '{0}'", path);
+            if (prefab == null)
+            {
+                d.LogWarning($"Prefab not found at package path. {path} Attempting alt path. {altPath}");
+                prefab = AssetDatabase.LoadAssetAtPath<GameObject>(altPath);
+                d.Assert(prefab != null, "Prefab for editor preset not found at any path when trying to create through menu item!");
+            }
 
             GameObject parent = Selection.activeGameObject;
 
             if (menuCommand.context as GameObject != null)
                 parent = menuCommand.context as GameObject;
 
-            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            string name = $"new {prefab.name}";
+
+            GameObject instance = unpackPrefab ? GameObject.Instantiate(prefab) : (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            instance.name = name;
             if (parent != null)
                 GameObjectUtility.SetParentAndAlign(instance, parent);
-            else
-                d.LogWarning("No GameObject selected. Placing in the root");
 
             Undo.RegisterCreatedObjectUndo(instance, "Create " + prefab.name);
 

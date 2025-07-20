@@ -9,7 +9,8 @@ namespace BeltainsTools.Editor
     public class UILineGraphEditor : UnityEditor.Editor
     {
         const string k_CreateNew_MenuItemPath = "GameObject/" + Globals.k_DisplayName + "/UI/LineGraph";
-        const string k_CreateNew_PresetPrefabPath = "...";
+        const string k_CreateNew_PresetPrefabPath = "Packages/com.beltainjordaan.beltainstools/Editor/Prefabs/UI/ComponentPresets/UILineGraph.prefab";
+        const string k_CreateNew_PresetPrefabPathAlt = "Assets/Plugins/BeltainsTools/Editor/Prefabs/UI/ComponentPresets/UILineGraph.prefab";
 
         UILineGraph m_Target;
 
@@ -28,23 +29,7 @@ namespace BeltainsTools.Editor
         [MenuItem(k_CreateNew_MenuItemPath, isValidateFunction: false, priority: 0)]
         public static void CreateNew(MenuCommand menuCommand)
         {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(k_CreateNew_PresetPrefabPath);
-            d.AssertFormat(prefab != null, "Prefab for editor preset not found at path when trying to create through menu item! '{0}'", k_CreateNew_PresetPrefabPath);
-
-            GameObject parent = Selection.activeGameObject;
-
-            if (menuCommand.context as GameObject != null)
-                parent = menuCommand.context as GameObject;
-
-            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-            if (parent != null)
-                GameObjectUtility.SetParentAndAlign(instance, parent);
-            else
-                d.LogWarning("No GameObject selected. Placing in the root");
-
-            Undo.RegisterCreatedObjectUndo(instance, "Create " + prefab.name);
-
-            Selection.activeGameObject = instance;
+            Utils.CreatePresetFromPrefabPath(menuCommand, k_CreateNew_PresetPrefabPath, k_CreateNew_PresetPrefabPathAlt);
         }
 
 
