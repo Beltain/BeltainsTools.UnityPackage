@@ -4,13 +4,14 @@ using UnityEngine;
 
 namespace BeltainsTools.Editor
 {
-    [CustomEditor(typeof(UILineRenderer))]
+    [CustomEditor(typeof(UILineRenderer), editorForChildClasses: true)]
     public class UILineRendererEditor : UnityEditor.Editor
     {
+        UnityEditor.Editor m_GraphicEditor;
+
         UILineRenderer m_Target;
 
-        SerializedProperty prop_Thickness;
-        SerializedProperty prop_CornerDetail;
+        SerializedProperty prop_LineStyle;
 
         SerializedProperty prop_Points;
         SerializedProperty prop_IsLoop;
@@ -22,12 +23,8 @@ namespace BeltainsTools.Editor
         {
             serializedObject.Update();
 
-            EditorGUILayout.LabelField("Line Style", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(prop_Thickness);
-            EditorGUILayout.PropertyField(prop_CornerDetail);
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Line Data", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Line Settings", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(prop_LineStyle);
             EditorGUILayout.PropertyField(prop_Points);
             EditorGUILayout.PropertyField(prop_IsLoop);
 
@@ -52,19 +49,32 @@ namespace BeltainsTools.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Graphic Settings", EditorStyles.boldLabel);
-            base.OnInspectorGUI();
+
+            m_GraphicEditor.OnInspectorGUI();
         }
 
         private void OnEnable()
         {
             m_Target = target as UILineRenderer;
+            if (m_Target == null)
+                return;
 
-            prop_Thickness = serializedObject.FindProperty("m_Thickness");
-            prop_CornerDetail = serializedObject.FindProperty("m_CornerDetail");
+            m_GraphicEditor = CreateEditor((UnityEngine.UI.Graphic)target, typeof(UnityEditor.UI.GraphicEditor));
+
+            prop_LineStyle = serializedObject.FindProperty("m_LineStyle");
 
             prop_Points = serializedObject.FindProperty("m_Points");
             prop_IsLoop = serializedObject.FindProperty("m_IsLoop");
             prop_ArePointsInGraphicSpace = serializedObject.FindProperty("m_ArePointsInGraphicSpace");
+        }
+
+        private void OnDisable()
+        {
+            if (m_GraphicEditor != null)
+            {
+                DestroyImmediate(m_GraphicEditor);
+                m_GraphicEditor = null;
+            }
         }
     }
 }

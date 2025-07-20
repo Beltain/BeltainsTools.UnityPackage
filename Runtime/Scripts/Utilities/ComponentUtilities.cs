@@ -28,8 +28,8 @@ namespace BeltainsTools.Utilities
             Transform currentObject = origin.transform;
             for (int i = 0; i < maxIterations; i++)
             {
-                result = currentObject.GetComponent<T>();
-                if (result != null)
+                bool hasComponent = currentObject.TryGetComponent<T>(out result);
+                if (hasComponent)
                     return result;
                 if (currentObject.parent == null)
                     return default;
@@ -37,6 +37,5 @@ namespace BeltainsTools.Utilities
             }
             return default;
         }
-
     }
 }

@@ -7,17 +7,15 @@ namespace BeltainsTools.UI
     [RequireComponent(typeof(CanvasRenderer))]
     public class UILineRenderer : MaskableGraphic
     {
-        [SerializeField, HideInInspector]
-        float m_Thickness = 0.5f;
-        [SerializeField, HideInInspector, Tooltip("Number of segments to use per 90 degrees when drawing corners, more segments = smoother corners")]
-        int m_CornerDetail = 8;
+        [SerializeField]
+        protected LineStyle m_LineStyle = new LineStyle() { Thickness = 1f, CornerDetail = 8};
 
-        [SerializeField, HideInInspector]
-        Vector2[] m_Points = new Vector2[0];
-        [SerializeField, HideInInspector]
-        bool m_IsLoop = false;
-        [SerializeField, HideInInspector, Tooltip("Whether or not points should be calculated relative to the rect of this graphic")]
-        bool m_ArePointsInGraphicSpace = false;
+        [SerializeField]
+        protected Vector2[] m_Points = new Vector2[0];
+        [SerializeField]
+        public bool m_IsLoop = false;
+        [SerializeField, Tooltip("Whether or not points should be calculated relative to the rect of this graphic")]
+        public bool m_ArePointsInGraphicSpace = false;
 
 
         ConnectingSegment[] m_ConnectingSegments;
@@ -29,6 +27,14 @@ namespace BeltainsTools.UI
 
         public int PointCount => m_Points.Length;
 
+
+        [System.Serializable]
+        public struct LineStyle
+        {
+            public float Thickness;
+            [Tooltip("Number of segments to use per 90 degrees when drawing corners, more segments = smoother corners")]
+            public int CornerDetail;
+        }
 
         /// <summary>Structure containing the definition of the bit of the line between two points excluding any '<see cref="CornerSegment"/>s' and 'end-caps'</summary>
         struct ConnectingSegment 
@@ -307,7 +313,7 @@ namespace BeltainsTools.UI
             if (!IsValidLine)
                 return;
 
-            float nodeRadius = m_Thickness * 0.5f;
+            float nodeRadius = m_LineStyle.Thickness * 0.5f;
 
             // generate connecting segments data
             for (int i = 0; i < connectingCount; i++)
@@ -324,7 +330,7 @@ namespace BeltainsTools.UI
                 int segA = i;
                 int segB = (i + 1) % connectingCount;
                 int cornerIdx = (i + 1) % PointCount;
-                m_CornerSegments[i] = new CornerSegment(ref m_ConnectingSegments[segA], ref m_ConnectingSegments[segB], GetPointPosition(cornerIdx), nodeRadius, m_CornerDetail);
+                m_CornerSegments[i] = new CornerSegment(ref m_ConnectingSegments[segA], ref m_ConnectingSegments[segB], GetPointPosition(cornerIdx), nodeRadius, m_LineStyle.CornerDetail);
             }
 
             // generate end-cap segments data (only if not loop)

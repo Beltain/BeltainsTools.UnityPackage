@@ -16,6 +16,20 @@ namespace BeltainsTools.Utilities
             vh.AddTriangle(vertIndex, vertIndex + 1, vertIndex + 2);
         }
 
+        public static void DrawLine(VertexHelper vh, Vector2 startPoint, Vector2 endPoint, float thickness, Color color)
+        {
+            float halfThickness = thickness * 0.5f;
+            Vector2 rOffset = (endPoint - startPoint).normalized.Perpendicularise(clockwise: true) * halfThickness;
+            DrawQuad(
+                vh,
+                startPoint - rOffset,
+                endPoint - rOffset,
+                endPoint + rOffset,
+                startPoint + rOffset,
+                color
+                );
+        }
+
         public static void DrawQuad(VertexHelper vh, Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, Color color)
         {
             int vertIndex = vh.currentVertCount;

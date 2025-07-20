@@ -167,7 +167,7 @@ namespace BeltainsTools.Editor
             return System.IO.Path.GetDirectoryName(assetPath);
         }
 
-        [MenuItem("Assets/Create/BeltainsTools/Texture2DArray from Selection", isValidateFunction: true, priority = 1)]
+        [MenuItem("Assets/Create/" + Globals.k_DisplayName + "/Texture2DArray from Selection", isValidateFunction: true, priority = 1)]
         public static bool ValidateCreateTexture2DArray()
         {
             foreach (Object textureObject in Selection.objects)
@@ -175,7 +175,7 @@ namespace BeltainsTools.Editor
             return Selection.objects.Length > 0;
         }
 
-        [MenuItem("Assets/Create/BeltainsTools/Texture2DArray from Selection", priority = 1)]
+        [MenuItem("Assets/Create/" + Globals.k_DisplayName + "/Texture2DArray from Selection", priority = 1)]
         public static void CreateTexture2DArray()
         {
             Texture2D[] textures = Selection.objects.Select(r => r as Texture2D).ToArray();
@@ -220,6 +220,31 @@ namespace BeltainsTools.Editor
             }
 
             AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>Instantiate a preset prefab from a given path and menu command context (right click menu in heirarchy)</summary>
+        public static void CreatePresetFromPrefabPath(MenuCommand menuCommand, string path)
+        {
+            // first try load from 'package' path
+
+            // then try load from 'assets' path
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            d.AssertFormat(prefab != null, "Prefab for editor preset not found at path when trying to create through menu item! '{0}'", path);
+
+            GameObject parent = Selection.activeGameObject;
+
+            if (menuCommand.context as GameObject != null)
+                parent = menuCommand.context as GameObject;
+
+            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            if (parent != null)
+                GameObjectUtility.SetParentAndAlign(instance, parent);
+            else
+                d.LogWarning("No GameObject selected. Placing in the root");
+
+            Undo.RegisterCreatedObjectUndo(instance, "Create " + prefab.name);
+
+            Selection.activeGameObject = instance;
         }
     }
 }
