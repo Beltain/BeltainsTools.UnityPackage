@@ -17,6 +17,12 @@ namespace BeltainsTools.Editor
         SerializedProperty prop_DrawBorderLines;
 
 
+        [MenuItem("GameObject / " + Globals.k_PrettyName + " / UI / GridRenderer", priority = 1)]
+        public static void CreateNew(MenuCommand menuCommand)
+        {
+            Utils.TryCreateBeltainsToolsPresetFromPrefabPath(menuCommand, keepPrefabReference: false, "Editor/Prefabs/UI/ComponentPresets/UIGridRenderer.prefab");
+        }
+
 
         public override void OnInspectorGUI()
         {

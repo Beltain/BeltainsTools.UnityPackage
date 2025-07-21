@@ -8,28 +8,19 @@ namespace BeltainsTools.Editor
     [CustomEditor(typeof(UILineGraph))]
     public class UILineGraphEditor : UnityEditor.Editor
     {
-        const string k_CreateNew_MenuItemPath = "GameObject/" + Globals.k_DisplayName + "/UI/LineGraph";
-        const string k_CreateNew_PresetPrefabPath = "Packages/com.beltainjordaan.beltainstools/Editor/Prefabs/UI/ComponentPresets/UILineGraph.prefab";
-        const string k_CreateNew_PresetPrefabPathAlt = "Assets/Plugins/BeltainsTools/Editor/Prefabs/UI/ComponentPresets/UILineGraph.prefab";
-
         UILineGraph m_Target;
 
         SerializedProperty prop_GraphLineRenderer;
         SerializedProperty prop_GraphGridRenderer;
         SerializedProperty prop_VerticalAxis;
         SerializedProperty prop_HorizontalAxis;
+        SerializedProperty prop_AxesEncapsulateData;
+        SerializedProperty prop_DataPoints;
 
-
-        [MenuItem(k_CreateNew_MenuItemPath, isValidateFunction: true, priority: 0)]
-        public static bool Validate_CreateNew()
-        {
-            return Selection.activeGameObject != null && Selection.activeGameObject.transform.GetComponentInParents<Canvas>() != null;
-        }
-
-        [MenuItem(k_CreateNew_MenuItemPath, isValidateFunction: false, priority: 0)]
+        [MenuItem("GameObject / " + Globals.k_PrettyName + " / UI / LineGraph", priority = 1)]
         public static void CreateNew(MenuCommand menuCommand)
         {
-            Utils.CreatePresetFromPrefabPath(menuCommand, k_CreateNew_PresetPrefabPath, k_CreateNew_PresetPrefabPathAlt);
+            Utils.TryCreateBeltainsToolsPresetFromPrefabPath(menuCommand, keepPrefabReference: false, "Editor/Prefabs/UI/ComponentPresets/UILineGraph.prefab");
         }
 
 
@@ -43,14 +34,25 @@ namespace BeltainsTools.Editor
             EditorGUILayout.PropertyField(prop_GraphGridRenderer);
             EditorGUILayout.PropertyField(prop_VerticalAxis);
             EditorGUILayout.PropertyField(prop_HorizontalAxis);
-
             serializedObject.ApplyModifiedProperties();
 
             if (EditorGUI.EndChangeCheck())
             {
-                m_Target.ReDrawGraphStructure();
+                m_Target.RedrawGraphStructure();
+                EditorUtility.SetDirty(m_Target);
             }
 
+            EditorGUI.BeginChangeCheck();
+
+            EditorGUILayout.PropertyField(prop_AxesEncapsulateData);
+            EditorGUILayout.PropertyField(prop_DataPoints);
+            serializedObject.ApplyModifiedProperties();
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                m_Target.RedrawGraphData();
+                EditorUtility.SetDirty(m_Target);
+            }
         }
 
         private void OnEnable()
@@ -61,6 +63,8 @@ namespace BeltainsTools.Editor
             prop_GraphGridRenderer = serializedObject.FindProperty("m_GraphGridRenderer");
             prop_VerticalAxis = serializedObject.FindProperty("m_VerticalAxis");
             prop_HorizontalAxis = serializedObject.FindProperty("m_HorizontalAxis");
+            prop_AxesEncapsulateData = serializedObject.FindProperty("m_AxesEncapsulateData");
+            prop_DataPoints = serializedObject.FindProperty("m_DataPoints");
         }
     }
 }

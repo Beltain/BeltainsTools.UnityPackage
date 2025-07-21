@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEditor;
 using BeltainsTools.Utilities;
 using System.IO;
+using UnityEngine.UI;
 
 namespace BeltainsTools.Editor
 {
@@ -167,7 +168,9 @@ namespace BeltainsTools.Editor
             return System.IO.Path.GetDirectoryName(assetPath);
         }
 
-        [MenuItem("Assets/Create/" + Globals.k_DisplayName + "/Texture2DArray from Selection", isValidateFunction: true, priority = 1)]
+
+
+        [MenuItem("Assets/Create/" + Globals.k_PrettyName + "/Texture2DArray from Selection", isValidateFunction: true, priority = 1)]
         public static bool ValidateCreateTexture2DArray()
         {
             foreach (Object textureObject in Selection.objects)
@@ -175,7 +178,7 @@ namespace BeltainsTools.Editor
             return Selection.objects.Length > 0;
         }
 
-        [MenuItem("Assets/Create/" + Globals.k_DisplayName + "/Texture2DArray from Selection", priority = 1)]
+        [MenuItem("Assets/Create/" + Globals.k_PrettyName + "/Texture2DArray from Selection", priority = 1)]
         public static void CreateTexture2DArray()
         {
             Texture2D[] textures = Selection.objects.Select(r => r as Texture2D).ToArray();
@@ -222,32 +225,100 @@ namespace BeltainsTools.Editor
             AssetDatabase.SaveAssets();
         }
 
-        /// <summary>Instantiate a preset prefab from a given path and menu command context (right click menu in heirarchy)</summary>
-        public static void CreatePresetFromPrefabPath(MenuCommand menuCommand, string path, string altPath, bool unpackPrefab = true)
+        /// <summary>Same as <see cref="TryCreatePresetFromPrefabPath(MenuCommand, bool, string[])"/> but paths are generated from <see cref="Globals.k_PackageRoots"/></summary>
+        internal static bool TryCreateBeltainsToolsPresetFromPrefabPath(MenuCommand menuCommand, bool keepPrefabReference, string packageRootRelativePath) 
         {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (prefab == null)
+            string[] paths = new string[Globals.k_PackageRoots.Length];
+            for (int i = 0; i < Globals.k_PackageRoots.Length; i++)
+                paths[i] = Path.Combine(Globals.k_PackageRoots[i], packageRootRelativePath);
+            return TryCreatePresetFromPrefabPath(menuCommand, keepPrefabReference, paths);
+        }
+
+        /// <summary>Instantiate a preset prefab from a given path and menu command context (right click menu in heirarchy)</summary>
+        public static bool TryCreatePresetFromPrefabPath(MenuCommand menuCommand, bool keepPrefabReference, params string[] pathsToAttempt)
+        {
+            GameObject prefab = null;
+            List<string> attemptedPaths = new List<string>(pathsToAttempt);
+            for (int i = 0; i < pathsToAttempt.Length && prefab == null; i++)
             {
-                d.LogWarning($"Prefab not found at package path. {path} Attempting alt path. {altPath}");
-                prefab = AssetDatabase.LoadAssetAtPath<GameObject>(altPath);
-                d.Assert(prefab != null, "Prefab for editor preset not found at any path when trying to create through menu item!");
+                string path = pathsToAttempt[i];
+                attemptedPaths.Add(path);
+                prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+
+                if (i == pathsToAttempt.Length && prefab == null)
+                {
+                    d.LogError("Attempted to load prefab at all provided paths but none were valid!\n" +
+                        $"Paths attempted:\n{string.Join(",\n", attemptedPaths)}");
+                    return false;
+                }
             }
 
-            GameObject parent = Selection.activeGameObject;
+            string instanceName = $"new {prefab.name}";
 
-            if (menuCommand.context as GameObject != null)
-                parent = menuCommand.context as GameObject;
+            GameObject parent = menuCommand.context is GameObject menuContextGO ? menuContextGO : Selection.activeGameObject;
 
-            string name = $"new {prefab.name}";
+            if (prefab.transform is RectTransform)
+            {
+                // it's a UI prefab, so we need to ensure it gets parented to a canvas
+                if (parent == null || parent.transform.GetComponentInParents<Canvas>() == null)
+                {
+                    Canvas canvas = CreateDefaultCanvas(parent, includeEventSystem: false);
+                    parent = canvas.gameObject;
+                }
+            }
 
-            GameObject instance = unpackPrefab ? GameObject.Instantiate(prefab) : (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-            instance.name = name;
+            GameObject instance = keepPrefabReference ? (GameObject)PrefabUtility.InstantiatePrefab(prefab) : GameObject.Instantiate(prefab);
+            instance.name = instanceName;
             if (parent != null)
                 GameObjectUtility.SetParentAndAlign(instance, parent);
 
             Undo.RegisterCreatedObjectUndo(instance, "Create " + prefab.name);
 
             Selection.activeGameObject = instance;
+
+            return true;
+        }
+
+        /// <summary>Create a default canvas, mimicking unity's default canvas created when you try to add a UI gameobject in a scene without a canvas</summary>
+        public static Canvas CreateDefaultCanvas(GameObject parent, bool includeEventSystem = true, bool select = false)
+        {
+            // Create and configure canvasnd its components
+            GameObject canvasGO = 
+                new GameObject("Canvas", 
+                    typeof(Canvas), 
+                    typeof(CanvasScaler), 
+                    typeof(GraphicRaycaster)
+                    );
+            if (parent != null)
+                GameObjectUtility.SetParentAndAlign(canvasGO, parent);
+            Canvas canvas = canvasGO.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+            // configure scaler
+            CanvasScaler scaler = canvasGO.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+
+            Undo.RegisterCreatedObjectUndo(canvasGO, "Create Default Canvas");
+
+            // Ensure there is an EventSystem in the scene
+            if (includeEventSystem && Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            {
+                GameObject eventSystemGO = 
+                    new GameObject("EventSystem", 
+                        typeof(UnityEngine.EventSystems.EventSystem), 
+                        typeof(UnityEngine.EventSystems.StandaloneInputModule)
+                        );
+
+                Undo.RegisterCreatedObjectUndo(eventSystemGO, "Create Default Canvas Event System");
+            }
+
+            if(select)
+                Selection.activeGameObject = canvasGO;
+
+            return canvas;
         }
     }
 }

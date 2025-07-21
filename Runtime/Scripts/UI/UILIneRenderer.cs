@@ -227,8 +227,9 @@ namespace BeltainsTools.UI
         }
         public void SetPoints(Vector2[] points)
         {
-            Array.Resize(ref m_Points, points.Length);
-            for (int i = 0; i < points.Length; i++)
+            int arraySize = points == null ? 0 : points.Length;
+            Array.Resize(ref m_Points, arraySize);
+            for (int i = 0; i < arraySize; i++)
                 m_Points[i] = points[i];
             RecalculateSegmentsData();
         }

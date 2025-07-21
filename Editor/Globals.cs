@@ -5,7 +5,12 @@ namespace BeltainsTools.Editor
     internal static class Globals
     {
         internal const string k_PackageName = "BeltainsTools";
-        internal const string k_DisplayIcon = "\u270e"; // Pencil icon
-        internal const string k_DisplayName = k_DisplayIcon + " " + k_PackageName;
+        internal const string k_PrettyName = "\u270e" /*Pencil icon*/ + " " + k_PackageName;
+
+        internal static readonly string[] k_PackageRoots = new string[]
+        {
+            "Packages/com.beltainjordaan.beltainstools",
+            "Assets/Plugins/BeltainsTools"
+        };
     }
 }
