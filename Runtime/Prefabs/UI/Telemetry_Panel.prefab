@@ -174,15 +174,17 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 0
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 1
   checkPaddingRequired: 0
   m_isRichText: 0
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -253,8 +255,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db634c8214b1aaf4c872bcc08cb1a60d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ElementPrefab: {fileID: 7563998814706512935, guid: 07fb4411581518641a464c5ab8106149,
-    type: 3}
+  m_TextElementPrefab: {fileID: 7563998814706512935, guid: 07fb4411581518641a464c5ab8106149, type: 3}
+  m_LineGraphElementPrefab: {fileID: 4186440527316827211, guid: a64a312a5b4d7534eb24d928f83df467, type: 3}
 --- !u!222 &5864776762448460546
 CanvasRenderer:
   m_ObjectHideFlags: 0

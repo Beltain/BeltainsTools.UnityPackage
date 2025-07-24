@@ -1,3 +1,9 @@
+## [1.0.5] - [24/07/25]
+### Added UILineGraph, Improved Editor Experience
+* Added new UILineGraph component and game object resource. Addable by a right-click in the heriarchy.
+* Added more editor utilities for adding resources from a path into the scene in editor and play mode.
+* Hooked new menu items for the UILineRenderer, UIGridRenderer, and UILineGraph
+
 ## [1.0.4] - [19/07/25]
 ### Improvements to UILineRenderer Access
 * Added some accessors and a new editor for the UILineRenderer

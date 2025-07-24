@@ -21,8 +21,10 @@ namespace BeltainsTools.UI
         [SerializeField, Tooltip("If true: Our Axes value ranges are set based on the min/max data points. If false, use the default axis value range.")]
         private bool m_AxesEncapsulateData = false;
         [SerializeField]
-        private Vector2[] m_DataPoints = new Vector2[0];
+        private Vector2[] m_DefaultDataPoints = new Vector2[0];
 
+        private Vector2[] m_DataPoints = new Vector2[0];
+        private Vector2[] m_LineDataCache = new Vector2[0];
 
         [System.Serializable]
         public class GraphAxis
@@ -189,31 +191,29 @@ namespace BeltainsTools.UI
 
             m_VerticalAxis.RedrawLabels();
             m_HorizontalAxis.RedrawLabels();
+
+            RedrawGraphData(); // since our axes may have changed, we need to redraw the data as well
         }
 
         public void SetData(Vector2[] dataPoints)
         {
-            System.Array.Resize(ref m_DataPoints, dataPoints.Length);
-            for (int i = 0; i < dataPoints.Length; i++)
+            int numDataPoints = dataPoints?.Length ?? 0;
+            if (numDataPoints != m_DataPoints.Length)
+            {
+                System.Array.Resize(ref m_DataPoints, numDataPoints);
+                System.Array.Resize(ref m_LineDataCache, numDataPoints);
+            }
+            for (int i = 0; i < numDataPoints; i++)
                 m_DataPoints[i] = dataPoints[i];
+            System.Array.Sort(m_DataPoints, (a, b) => a.x.CompareTo(b.x));
 
             RedrawGraphData();
         }
 
         public void RedrawGraphData()
         {
-            if (m_GraphLineRenderer != null)
-            {
-                if (m_DataPoints != null && m_DataPoints.Length > 1)
-                {
-                    System.Array.Sort(m_DataPoints, (a, b) => a.x.CompareTo(b.x));
-                    m_GraphLineRenderer.SetPoints(m_DataPoints);
-                }
-                else
-                {
-                    m_GraphLineRenderer.SetPoints(null);
-                }
-            }
+            if (!Application.isPlaying)
+                return;
 
             if (m_AxesEncapsulateData && m_DataPoints != null && m_DataPoints.Length > 0)
             {
@@ -233,8 +233,21 @@ namespace BeltainsTools.UI
                 m_VerticalAxis.ResetRange();
                 m_HorizontalAxis.ResetRange();
             }
+
+            for (int i = 0; i < m_DataPoints.Length; i++)
+            {
+                m_LineDataCache[i] = new Vector2(
+                    m_HorizontalAxis.ValueRange.InverseLerp(m_DataPoints[i].x),
+                    m_VerticalAxis.ValueRange.InverseLerp(m_DataPoints[i].y));
+            }
+            m_GraphLineRenderer.SetPoints(m_LineDataCache != null && m_LineDataCache.Length > 1 ? m_LineDataCache : null);
         }
 
+
+        private void Awake()
+        {
+            SetData(m_DefaultDataPoints);
+        }
 
         private void Reset()
         {

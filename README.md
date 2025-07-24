@@ -14,6 +14,7 @@ Here's a rundown of the high level features of the package:
 * <b>Pathfinding</b> - Got an A* implementation in here. 
 * <b>IO</b> - Includes and easy to use compressed file saving/loading system.
 * <b>UI Line Renderer</b> - A user friendly line renderer for Unity's canvas renderer.
+* <b>UI Line Graph</b> - A simple line graph component that allows for dataset readouts.
 
 ## Contributions
 I'm not currently accepting contributions to this package. Just wanted to make it public. Thanks for your interest though.

@@ -1,6 +1,6 @@
 {
   "name": "com.beltainjordaan.beltainstools",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "displayName": "BeltainsTools",
   "description": "A collection of helpful Unity tools, utilities, and extensions for a more enjoyable game dev experience.",
   "unity": "6000.0",

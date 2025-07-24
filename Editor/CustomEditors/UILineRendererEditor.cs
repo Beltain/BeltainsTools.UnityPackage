@@ -18,7 +18,7 @@ namespace BeltainsTools.Editor
         SerializedProperty prop_ArePointsInGraphicSpace;
 
 
-        [MenuItem("GameObject / " + Globals.k_PrettyName + " / UI / LineRenderer", priority = 1)]
+        [MenuItem("GameObject / " + BTInternal.PackageData.k_PrettyName + " / UI / LineRenderer", priority = 1)]
         public static void CreateNew(MenuCommand menuCommand)
         {
             Utils.TryCreateBeltainsToolsPresetFromPrefabPath(menuCommand, keepPrefabReference: false, "Editor/Prefabs/UI/ComponentPresets/UILineRenderer.prefab");

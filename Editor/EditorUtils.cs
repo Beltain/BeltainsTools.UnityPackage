@@ -170,7 +170,7 @@ namespace BeltainsTools.Editor
 
 
 
-        [MenuItem("Assets/Create/" + Globals.k_PrettyName + "/Texture2DArray from Selection", isValidateFunction: true, priority = 1)]
+        [MenuItem("Assets/Create/" + BTInternal.PackageData.k_PrettyName + "/Texture2DArray from Selection", isValidateFunction: true, priority = 1)]
         public static bool ValidateCreateTexture2DArray()
         {
             foreach (Object textureObject in Selection.objects)
@@ -178,7 +178,7 @@ namespace BeltainsTools.Editor
             return Selection.objects.Length > 0;
         }
 
-        [MenuItem("Assets/Create/" + Globals.k_PrettyName + "/Texture2DArray from Selection", priority = 1)]
+        [MenuItem("Assets/Create/" + BTInternal.PackageData.k_PrettyName + "/Texture2DArray from Selection", priority = 1)]
         public static void CreateTexture2DArray()
         {
             Texture2D[] textures = Selection.objects.Select(r => r as Texture2D).ToArray();
@@ -228,9 +228,9 @@ namespace BeltainsTools.Editor
         /// <summary>Same as <see cref="TryCreatePresetFromPrefabPath(MenuCommand, bool, string[])"/> but paths are generated from <see cref="Globals.k_PackageRoots"/></summary>
         internal static bool TryCreateBeltainsToolsPresetFromPrefabPath(MenuCommand menuCommand, bool keepPrefabReference, string packageRootRelativePath) 
         {
-            string[] paths = new string[Globals.k_PackageRoots.Length];
-            for (int i = 0; i < Globals.k_PackageRoots.Length; i++)
-                paths[i] = Path.Combine(Globals.k_PackageRoots[i], packageRootRelativePath);
+            string[] paths = new string[BTInternal.PackageData.k_PackageRoots.Length];
+            for (int i = 0; i < BTInternal.PackageData.k_PackageRoots.Length; i++)
+                paths[i] = Path.Combine(BTInternal.PackageData.k_PackageRoots[i], packageRootRelativePath);
             return TryCreatePresetFromPrefabPath(menuCommand, keepPrefabReference, paths);
         }
 
