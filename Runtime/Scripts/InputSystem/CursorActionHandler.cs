@@ -6,8 +6,12 @@ using BeltainsTools.EventHandling;
 
 namespace BeltainsTools.InputUtils
 {
+    [System.Serializable]
     public class CursorActionHandler : System.IDisposable
     {
+        [SerializeField]
+        InputActionReference m_ActionRef;
+
         public BEvent StartedEvent;
         public BEvent CancelledEvent;
         public BEvent DragStartedEvent;
@@ -37,13 +41,18 @@ namespace BeltainsTools.InputUtils
 
 
         InputAction m_Action;
-        MonoBehaviour m_CoroutineOwner;
+        MonoBehaviour m_Owner;
 
 
-        public CursorActionHandler(InputAction inputAction, MonoBehaviour coroutineOwner)
+        public CursorActionHandler(InputActionReference inputActionRef)
         {
-            m_Action = inputAction;
-            m_CoroutineOwner = coroutineOwner;
+            m_ActionRef = inputActionRef;
+        }
+
+        public void Initialise(InputActionAsset inputActions, MonoBehaviour ownerMB)
+        {
+            m_Owner = ownerMB;
+            m_Action = inputActions.FindAction(m_ActionRef.action.name); // re reference incase we have an instance of the input actions
 
             m_Action.started += InputAction_started;
             m_Action.canceled += InputAction_canceled;
@@ -52,6 +61,9 @@ namespace BeltainsTools.InputUtils
         ~CursorActionHandler() => Dispose();
         public void Dispose()
         {
+            if (m_Action == null)
+                return;
+
             m_Action.started -= InputAction_started;
             m_Action.canceled -= InputAction_canceled;
         }
@@ -65,7 +77,7 @@ namespace BeltainsTools.InputUtils
                 StartedThisFrame = true;
 
                 CursorDownCo = CursorDownCoroutine();
-                m_CoroutineOwner.StartCoroutine(CursorDownCo);
+                m_Owner.StartCoroutine(CursorDownCo);
                 StartedEvent.Invoke();
             }
             else
@@ -82,13 +94,13 @@ namespace BeltainsTools.InputUtils
                     DragCancelledEvent.Invoke();
                 }
 
-                m_CoroutineOwner.StopCoroutine(CursorDownCo);
+                m_Owner.StopCoroutine(CursorDownCo);
                 CancelledEvent.Invoke();
 
                 DragOrigin = Vector2.negativeInfinity;
                 SetDragVector(Vector2.zero);
 
-                m_CoroutineOwner.StartCoroutine(CursorUpCoroutine());
+                m_Owner.StartCoroutine(CursorUpCoroutine());
             }
         }
 
