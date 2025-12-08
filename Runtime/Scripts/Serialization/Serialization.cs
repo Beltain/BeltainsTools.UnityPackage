@@ -41,6 +41,8 @@ namespace BeltainsTools.Serialization
         {
             public DataService() { }
 
+            public abstract bool TryGetVersion(in string dataString, out int dataVersion);
+
             /// <summary>Attempt to serialize an object into a data string</summary>
             public abstract bool Serialize<T>(in T objectToSerialize, out string dataString) where T : new();
             /// <summary>Attempt to deseralize an object from a data string</summary>
