@@ -9,6 +9,8 @@ namespace BeltainsTools.Serialization
     {
         public class DataService_JSON : DataService
         {
+            public const string k_DataVersioningVariableName = "_Version_";
+
             static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings()
             {
                 TypeNameHandling = TypeNameHandling.Auto,
@@ -17,6 +19,25 @@ namespace BeltainsTools.Serialization
                 Formatting = Formatting.None
             };
 
+
+            public override bool TryGetVersion(in string dataString, out int dataVersion)
+            {
+                dataVersion = -1;
+                try
+                {
+                    var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, object>>(dataString, SerializerSettings);
+                    if (jsonObject != null && jsonObject.ContainsKey(k_DataVersioningVariableName))
+                    {
+                        dataVersion = System.Convert.ToInt32(jsonObject[k_DataVersioningVariableName]);
+                        return true;
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"Error while trying to get data version: {e}");
+                }
+                return false;
+            }
 
             public override bool Deserialize<T>(in string dataString, out T deserializedObject)
             {
