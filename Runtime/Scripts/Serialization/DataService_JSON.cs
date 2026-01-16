@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json;
+using System;
 
 namespace BeltainsTools.Serialization
 {
@@ -39,9 +40,9 @@ namespace BeltainsTools.Serialization
                 return false;
             }
 
-            public override bool Deserialize<T>(in string dataString, out T deserializedObject)
+            public override bool Deserialize(in string dataString, Type type, out object deserializedObject)
             {
-                deserializedObject = (T)JsonConvert.DeserializeObject(dataString, typeof(T), SerializerSettings);
+                deserializedObject = JsonConvert.DeserializeObject(dataString, type, SerializerSettings);
                 return true; //Can't find a way to check whether the process failed or not (not using try catch), just returning true
             }
 

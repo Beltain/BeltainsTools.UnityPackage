@@ -46,7 +46,14 @@ namespace BeltainsTools.Serialization
             /// <summary>Attempt to serialize an object into a data string</summary>
             public abstract bool Serialize<T>(in T objectToSerialize, out string dataString) where T : new();
             /// <summary>Attempt to deseralize an object from a data string</summary>
-            public abstract bool Deserialize<T>(in string dataString, out T deserializedObject) where T : new();
+            public bool Deserialize<T>(in string dataString, out T deserializedObject) where T : new()
+            {
+                bool success = Deserialize(dataString, typeof(T), out object obj);
+                deserializedObject = success ? (T)obj : default(T);
+                return success;
+            }
+            /// <summary>Attempt to deseralize an object from a data string</summary>
+            public abstract bool Deserialize(in string dataString, Type type, out object deserializedObject);
         }
     }
 
