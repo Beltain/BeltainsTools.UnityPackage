@@ -12,12 +12,15 @@ namespace BeltainsTools.Serialization
     public class SaveData { }
 
     /// <summary>Why does this sound like an o2 plan? Anyways it's meant to be the interface for any object that can return and receive save data</summary>
-    public interface IDataSaver
+    public interface IDataSaver : IDataSaver<SaveData> { } // basic bitch save data saver
+
+    /// <summary>Why does this sound like an o2 plan? Anyways it's meant to be the interface for any object that can return and receive save data</summary>
+    public interface IDataSaver<T> where T : SaveData // handles save data of a specific type
     {
         /// <summary>Output relavent save data for this object. Return a success/fail</summary>
-        public bool Serialize(out SaveData data);
+        public bool Serialize(out T data);
         /// <summary>Set object from save data. Return a success/fail</summary>
-        public bool Deserialize(in SaveData data);
+        public bool Deserialize(in T data);
     }
 
     public static partial class FileServices
