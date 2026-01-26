@@ -11,9 +11,8 @@ namespace BeltainsTools.Serialization
     /// <summary>Base class for all save data </summary>
     public class SaveData { }
 
-    /// <summary>Why does this sound like an o2 plan? Anyways it's meant to be the interface for any object that can return and receive save data</summary>
+    /// <inheritdoc cref="IDataSaver{T}"/>
     public interface IDataSaver : IDataSaver<SaveData> { } // basic bitch save data saver
-
     /// <summary>Why does this sound like an o2 plan? Anyways it's meant to be the interface for any object that can return and receive save data</summary>
     public interface IDataSaver<T> where T : SaveData // handles save data of a specific type
     {
@@ -28,12 +27,43 @@ namespace BeltainsTools.Serialization
         /// <summary>Service responsible for writing/reading strings to/from a location</summary>
         public abstract class FileService
         {
+            public static readonly string s_PersistentPath = Application.persistentDataPath;
+
             public FileService() { }
 
+
+            [System.Obsolete("Please use WritePersistentData instead")]
+            public bool WriteData(in string data, string subDirectory, string fileName, bool encrypt) => WritePersistentFile(data, Path.Combine(subDirectory, fileName), encrypt);
+            /// <inheritdoc cref="WriteFile(in string, string, bool)"/>
+            public bool WritePersistentFile(in string data, string subPath, bool encrypt) => WriteFile(data, Path.Combine(s_PersistentPath, subPath), encrypt);
             /// <summary>Attempt to write serialized data, with an optional encryption pass beforehand</summary>
-            public abstract bool WriteData(in string data, string subDirectory, string fileName, bool encrypt);
+            public abstract bool WriteFile(in string data, string filePath, bool encrypt);
+
+
+            [System.Obsolete("Please use ReadPersistentData instead")]
+            public bool ReadData(out string data, string subDirectory, string fileName, bool encrypted) => ReadPersistentFile(out data, Path.Combine(subDirectory, fileName), encrypted);
+            /// <inheritdoc cref="ReadFile(out string, string, bool)"/>
+            public bool ReadPersistentFile(out string data, string subPath, bool encrypted) => ReadFile(out data, Path.Combine(s_PersistentPath, subPath), encrypted);
             /// <summary>Attempt to read serialized data, specifying whether or not it is encrypted data</summary>
-            public abstract bool ReadData(out string data, string subDirectory, string fileName, bool encrypted);
+            public abstract bool ReadFile(out string data, string filePath, bool encrypted);
+
+            /// <inheritdoc cref="ReadFileHash(string)"/>
+            public string ReadPersistentFileHash(string subPath) => ReadFileHash(Path.Combine(s_PersistentPath, subPath));
+            /// <summary>Get the hash for the file at the provided location, use to perform diff checks</summary>
+            public abstract string ReadFileHash(string filePath);
+
+
+            /// <inheritdoc cref="DeleteFile(string)"/>
+            public bool DeletePersistentFile(string subPath) => DeleteFile(Path.Combine(s_PersistentPath, subPath));
+            /// <summary>Delete the file at the given path</summary>
+            public abstract bool DeleteFile(string filePath);
+
+
+            /// <inheritdoc cref="GetFiles(string, string)"/>
+            public string[] GetPersistentFiles(string subPath = null, string extension = null) 
+                => subPath.IsNullOrEmpty() ? GetFiles(s_PersistentPath) : GetFiles(Path.Combine(s_PersistentPath, subPath));
+            /// <summary>Get all files in the provided <paramref name="directory"/>, and optionally with the specified <paramref name="extension"/></summary>
+            public abstract string[] GetFiles(string directory, string extension = null);
         }
     }
 
