@@ -112,10 +112,16 @@ namespace BeltainsTools.Serialization
                 if (!Directory.Exists(directory))
                     return new string[0];
 
+                string[] files;
                 if (extension.IsNullOrEmpty())
-                    return Directory.GetFiles(directory);
+                    files = Directory.GetFiles(directory);
+                else
+                    files = Directory.GetFiles(directory, $"*.{extension}");
 
-                return Directory.GetFiles(directory, $"*.{extension}");
+                for (int i = 0; i < files.Length; i++)
+                    files[i] = Path.GetFileName(files[i]);
+
+                return files;
             }
         }
     }
