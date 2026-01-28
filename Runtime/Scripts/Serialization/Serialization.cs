@@ -61,7 +61,7 @@ namespace BeltainsTools.Serialization
 
             /// <inheritdoc cref="GetFiles(string, string)"/>
             public string[] GetPersistentFiles(string subPath = null, string extension = null) 
-                => subPath.IsNullOrEmpty() ? GetFiles(s_PersistentPath) : GetFiles(Path.Combine(s_PersistentPath, subPath));
+                => subPath.IsNullOrEmpty() ? GetFiles(s_PersistentPath, extension) : GetFiles(Path.Combine(s_PersistentPath, subPath), extension);
             /// <summary>Get all files in the provided <paramref name="directory"/>, and optionally with the specified <paramref name="extension"/></summary>
             public abstract string[] GetFiles(string directory, string extension = null);
         }
