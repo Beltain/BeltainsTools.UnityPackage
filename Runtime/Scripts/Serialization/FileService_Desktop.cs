@@ -107,6 +107,17 @@ namespace BeltainsTools.Serialization
                 return !File.Exists(filePath);
             }
 
+            public override bool RenameFile(string filePath, string newFilePath)
+            {
+                if (!File.Exists(filePath))
+                    return false;
+                string newDirectory = Path.GetDirectoryName(newFilePath);
+                if (!Directory.Exists(newDirectory))
+                    Directory.CreateDirectory(newDirectory);
+                File.Move(filePath, newFilePath);
+                return File.Exists(newFilePath) && !File.Exists(filePath);
+            }
+
             public override string[] GetFiles(string directory, string extension = null)
             {
                 if (!Directory.Exists(directory))

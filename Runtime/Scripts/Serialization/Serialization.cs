@@ -58,6 +58,11 @@ namespace BeltainsTools.Serialization
             /// <summary>Delete the file at the given path</summary>
             public abstract bool DeleteFile(string filePath);
 
+            /// <inheritdoc cref="RenameFile(string, string)"/>
+            public bool RenamePersistentFile(string subPath, string newSubPath) => RenameFile(Path.Combine(s_PersistentPath, subPath), Path.Combine(s_PersistentPath, newSubPath));
+            /// <summary>Rename the file at the given path, to the given path</summary>
+            public abstract bool RenameFile(string filePath, string newFilePath);
+
 
             /// <inheritdoc cref="GetFiles(string, string)"/>
             public string[] GetPersistentFiles(string subPath = null, string extension = null) 
