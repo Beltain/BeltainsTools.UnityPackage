@@ -75,14 +75,14 @@ namespace BeltainsTools.Debugging
 
 
 
-        [DebugCommand("Terminal.Clear", "Clear terminal history")]
+        [DebugCommand("Terminal.Clear", "Clear terminal history", DebugCommands.AccessLevelTypes.Player)]
         public static void ClearActiveTerminalHistory()
         {
             d.Assert(s_ActiveInstance != null, "What?");
             s_ActiveInstance.ClearHistory();
         }
 
-        [DebugCommand("Terminal.Help", "Draw a list of all available commands")]
+        [DebugCommand("Terminal.Help", "Draw a list of all available commands", DebugCommands.AccessLevelTypes.Player)]
         public static string PrintCommands()
         {
             return string.Join("\n", DebugCommands.s_Commands.Select(command => command.HelpLine));

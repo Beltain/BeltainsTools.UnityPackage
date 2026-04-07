@@ -120,8 +120,8 @@ namespace BeltainsTools.Debugging
         {
             Dev = 0, //all
             Cheater = 100,
-            Player = 200, //least
-            Unset = 255,
+            Player = 200, 
+            Unset = 255, //least
         }
 
         public class CommandException : System.ApplicationException 
