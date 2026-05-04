@@ -11,8 +11,8 @@ namespace BeltainsTools.Pooling
     {
         public static Pooler Inst = null;
 
-        /// <summary>Existing pools for prefab <see cref="GameObject"/> instance IDs</summary>
-        Dictionary<int, ComponentPool> ExistingPoolsLookup { get; set; }
+        /// <summary>Existing pools for prefab <see cref="GameObject"/> entity IDs</summary>
+        Dictionary<EntityId, ComponentPool> ExistingPoolsLookup { get; set; }
         /// <summary>Iteratable list containing same data as <see cref="ExistingPoolsLookup"/></summary>
         List<ComponentPool> ExistingPools { get; set; }
         /// <summary>The transform which will hold all inactive pooled objects</summary>
@@ -29,7 +29,7 @@ namespace BeltainsTools.Pooling
             InitBins(parent);
 
             Inst = this;
-            ExistingPoolsLookup = new Dictionary<int, ComponentPool>();
+            ExistingPoolsLookup = new Dictionary<EntityId, ComponentPool>();
             ExistingPools = new List<ComponentPool>();
         }
 
@@ -64,25 +64,25 @@ namespace BeltainsTools.Pooling
 
         ComponentPool GetOrCreatePoolFromPrefab<T>(T prefab) where T : Component
         {
-            int prefabInstanceID = prefab.gameObject.GetInstanceID();
-            if (Inst.ExistingPoolsLookup.ContainsKey(prefabInstanceID))
-                return Inst.ExistingPoolsLookup[prefabInstanceID];
+            EntityId prefabEntityID = prefab.gameObject.GetEntityId();
+            if (Inst.ExistingPoolsLookup.ContainsKey(prefabEntityID))
+                return Inst.ExistingPoolsLookup[prefabEntityID];
 
             bool uiPool = ComponentPool.GetComponentUsesUIPool(prefab);
 
-            Inst.ExistingPoolsLookup[prefabInstanceID] = new ComponentPool(
+            Inst.ExistingPoolsLookup[prefabEntityID] = new ComponentPool(
                 prefab, 
                 uiPool ? Inst.TemplateBin_UI : Inst.TemplateBin,
                 uiPool ? Inst.RecyclingBin_UI : Inst.RecyclingBin
                 );
-            ExistingPools.Add(Inst.ExistingPoolsLookup[prefabInstanceID]);
+            ExistingPools.Add(Inst.ExistingPoolsLookup[prefabEntityID]);
 
-            return Inst.ExistingPoolsLookup[prefabInstanceID];
+            return Inst.ExistingPoolsLookup[prefabEntityID];
         }
 
         ComponentPool GetPoolForSpawnedObject<T>(T spawnedObject) where T : Component
         {
-            int spawnedObjectID = spawnedObject.gameObject.GetInstanceID();
+            EntityId spawnedObjectID = spawnedObject.gameObject.GetEntityId();
             for (int i = 0; i < ExistingPools.Count; i++)
             {
                 if (ExistingPools[i].IsPoolForObject(spawnedObjectID))
@@ -277,7 +277,7 @@ namespace BeltainsTools.Pooling
         public T m_Prefab;
         public T m_PrePooledPrefab;
         public HashSet<T> m_PooledObjects;
-        public HashSet<int> m_PooledObjectGameObjectIDs;
+        public HashSet<EntityId> m_PooledObjectGameObjectIDs;
         public Stack<T> m_AvailableObjects;
 
         int m_ActivePoolablesCount = 0;
@@ -301,7 +301,7 @@ namespace BeltainsTools.Pooling
             m_PrePooledPrefab.gameObject.SetActive(false);
 
             m_PooledObjects = new HashSet<T>();
-            m_PooledObjectGameObjectIDs = new HashSet<int>();
+            m_PooledObjectGameObjectIDs = new HashSet<EntityId>();
             m_AvailableObjects = new Stack<T>();
             IncreasePool(startingPoolSize);
         }
@@ -312,10 +312,10 @@ namespace BeltainsTools.Pooling
         /// <summary>
         /// Get whether or not the referenced GameObject instance belongs to this pool
         /// </summary>
-        /// <param name="instanceID">The GameObject instance ID of the tested object</param>
-        public bool IsPoolForObject(int instanceID)
+        /// <param name="entityID">The GameObject entity ID of the tested object</param>
+        public bool IsPoolForObject(EntityId entityID)
         {
-            return m_PooledObjectGameObjectIDs.Contains(instanceID);
+            return m_PooledObjectGameObjectIDs.Contains(entityID);
         }
 
         /// <summary>Get a pooled object, and increase the pool size if none are available</summary>
@@ -410,7 +410,7 @@ namespace BeltainsTools.Pooling
                 newlyPooledObject = GameObject.Instantiate(m_PrePooledPrefab, m_RecyclingBin);
             newlyPooledObject.gameObject.SetActive(false);
             m_PooledObjects.Add(newlyPooledObject);
-            m_PooledObjectGameObjectIDs.Add(newlyPooledObject.gameObject.GetInstanceID());
+            m_PooledObjectGameObjectIDs.Add(newlyPooledObject.gameObject.GetEntityId());
             m_AvailableObjects.Push(newlyPooledObject);
             PooledTypeMessager.SendMessage(PooledTypeMessager.MessageTypes.OnPool, newlyPooledObject.gameObject);
         }
@@ -430,7 +430,7 @@ namespace BeltainsTools.Pooling
             d.Assert(!pooledObject.gameObject.activeSelf, "Tried to depool an active poolable! No beuno my dude!");
             if (m_PooledObjects.Remove(pooledObject))
             {
-                m_PooledObjectGameObjectIDs.Remove(pooledObject.gameObject.GetInstanceID());
+                m_PooledObjectGameObjectIDs.Remove(pooledObject.gameObject.GetEntityId());
                 PooledTypeMessager.SendMessage(PooledTypeMessager.MessageTypes.OnDepool, pooledObject.gameObject);
                 GameObject.Destroy(pooledObject);
             }

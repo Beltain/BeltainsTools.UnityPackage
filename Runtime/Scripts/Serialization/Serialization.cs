@@ -22,6 +22,12 @@ namespace BeltainsTools.Serialization
         public bool Deserialize(in T data);
     }
 
+    public interface IIDDataSaver : IIDDataSaver<BeltainsTools.Serialization.SaveData> { }
+    public interface IIDDataSaver<T> : BeltainsTools.Serialization.IDataSaver<T> where T : BeltainsTools.Serialization.SaveData
+    {
+        string GetID();
+    }
+
     public static partial class FileServices
     {
         /// <summary>Service responsible for writing/reading strings to/from a location</summary>

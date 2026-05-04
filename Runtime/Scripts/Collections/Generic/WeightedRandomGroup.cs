@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace BeltainsTools
+namespace BeltainsTools.Collections.Generic
 {
     [System.Serializable]
     public class WeightedRandomGroup<T>
