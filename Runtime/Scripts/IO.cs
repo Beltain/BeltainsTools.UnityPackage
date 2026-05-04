@@ -26,6 +26,50 @@ namespace BeltainsTools
 #endif
         }
 
+
+        /// <summary>Deletes all files in the specified directory after prompting the user for confirmation. This method is only available in the Unity Editor.</summary>
+        public static void DeleteAllFilesInDirectory(string directoryPath)
+        {
+#if UNITY_EDITOR
+            if (!System.IO.Directory.Exists(directoryPath))
+            {
+                d.LogWarning($"Directory does not exist: {directoryPath}. Deleting 0 files...");
+                return;
+            }
+
+            string[] files = System.IO.Directory.GetFiles(directoryPath);
+
+            if (files.Length == 0)
+            {
+                d.Log($"No files found at {directoryPath}, deleting 0 files...");
+                return;
+            }
+
+            if (!EditorUtility.DisplayDialog("WARNING: DELETING FILES",
+                $"Are you sure you want to delete all files at \"{directoryPath}\"?\nThis cannot be undone.",
+                "Yeee", "No, wait.."))
+                return;
+
+            int deletedCount = 0;
+
+            foreach (string file in files)
+            {
+                try
+                {
+                    System.IO.File.Delete(file);
+                    deletedCount++;
+                }
+                catch (System.Exception ex)
+                {
+                    d.LogError($"Failed to delete file '{file}': {ex.Message}");
+                }
+            }
+
+            d.Log($"Deleted {deletedCount} files from {directoryPath}.");
+#endif
+        }
+
+
         /// <summary>Ensures that the given relative path exists in the project folder, creating missing folders as needed.</summary>
         /// <param name="path">Path relative to the project folder, e.g., "Assets/MyFolder/SubFolder"</param>
         public static void EnsureProjectPathExists(string path)
