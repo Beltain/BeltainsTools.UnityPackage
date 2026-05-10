@@ -225,7 +225,7 @@ namespace BeltainsTools.Editor
             AssetDatabase.SaveAssets();
         }
 
-        /// <summary>Same as <see cref="TryCreatePresetFromPrefabPath(MenuCommand, bool, string[])"/> but paths are generated from <see cref="Globals.k_PackageRoots"/></summary>
+        /// <summary>Same as <see cref="TryCreatePresetFromPrefabPath(MenuCommand, bool, string[])"/> but paths are generated from <see cref="BTInternal.PackageData.k_PackageRoots"/></summary>
         internal static bool TryCreateBeltainsToolsPresetFromPrefabPath(MenuCommand menuCommand, bool keepPrefabReference, string packageRootRelativePath) 
         {
             string[] paths = new string[BTInternal.PackageData.k_PackageRoots.Length];
@@ -304,7 +304,7 @@ namespace BeltainsTools.Editor
             Undo.RegisterCreatedObjectUndo(canvasGO, "Create Default Canvas");
 
             // Ensure there is an EventSystem in the scene
-            if (includeEventSystem && Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            if (includeEventSystem && Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
                 GameObject eventSystemGO = 
                     new GameObject("EventSystem", 

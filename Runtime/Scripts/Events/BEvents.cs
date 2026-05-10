@@ -15,6 +15,10 @@ namespace BeltainsTools.EventHandling
 
     #region Event Types
 
+    /// <summary>
+    /// Simple event that can be subscribed to/unsubscribed from by delegates
+    /// <para>Essentially a c# event with a few more controls/features for debugging and management</para>
+    /// </summary>
     public struct BEvent : IBEvent
     {
         DelegateIterator<System.Action> m_DelegateList;
@@ -98,6 +102,7 @@ namespace BeltainsTools.EventHandling
         }
     }
 
+    /// <inheritdoc cref="BEvent"/>
     public struct BEvent<A> : IBEvent
     {
         DelegateIterator<System.Action<A>> m_DelegateList;
@@ -181,6 +186,7 @@ namespace BeltainsTools.EventHandling
         }
     }
 
+    /// <inheritdoc cref="BEvent"/>
     public struct BEvent<A, B> : IBEvent
     {
         DelegateIterator<System.Action<A, B>> m_DelegateList;
@@ -264,6 +270,7 @@ namespace BeltainsTools.EventHandling
         }
     }
 
+    /// <inheritdoc cref="BEvent"/>
     public struct BEvent<A, B, C> : IBEvent
     {
         DelegateIterator<System.Action<A, B, C>> m_DelegateList;
@@ -347,6 +354,7 @@ namespace BeltainsTools.EventHandling
         }
     }
 
+    /// <inheritdoc cref="BEvent"/>
     public struct BEvent<A, B, C, D> : IBEvent
     {
         DelegateIterator<System.Action<A, B, C, D>> m_DelegateList;

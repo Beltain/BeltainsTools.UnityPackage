@@ -1,3 +1,6 @@
+## [0.1.7-alpha] - [10/05/26]
+### Added Event Channels
+
 ## [0.1.6-alpha] - [04/05/26]
 ### Many minor changes to support project development
 * Formalised versioning
