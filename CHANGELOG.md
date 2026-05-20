@@ -1,3 +1,9 @@
+## [0.2.0-alpha] - [21/05/26]
+### Finite State Machines
+* Added code-side finite state machine classes
+* Added a TimeDelayedAction alongside existing FrameDelayedAction
+* Added EventChannelInvoker component for editor level access to invocation of EventChannels
+
 ## [0.1.7-alpha] - [10/05/26]
 ### Added Event Channels
 
