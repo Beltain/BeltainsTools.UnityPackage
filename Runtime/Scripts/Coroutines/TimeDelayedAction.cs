@@ -5,6 +5,11 @@ namespace BeltainsTools.Coroutines
 {
     public class TimeDelayedAction
     {
+        public static void Execute(System.Action action, float delay)
+        {
+            CoroutineRunner.Run(ExecuteActionAfterTime(action, delay));
+        }
+
         public static void Execute(System.Action action, float delay, MonoBehaviour executor)
         {
             executor.StartCoroutine(ExecuteActionAfterTime(action, delay));

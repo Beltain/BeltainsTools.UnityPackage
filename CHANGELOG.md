@@ -1,3 +1,9 @@
+## [0.2.1-alpha] - [22/05/26]
+### Coroutine Sugar
+* Added CoroutineRunner with static calls to allow execution of coroutines with management handles from anywhere in code.
+* Added yield instruction for async Tasks
+* Improved FrameDelayed and TimeDelayed actions to not require an executor monobehaviour.
+
 ## [0.2.0-alpha] - [21/05/26]
 ### Finite State Machines
 * Added code-side finite state machine classes
