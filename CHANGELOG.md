@@ -1,3 +1,6 @@
+## [0.2.2-alpha] - [24/05/26]
+### Added VectorInt extensions
+
 ## [0.2.1-alpha] - [22/05/26]
 ### Coroutine Sugar
 * Added CoroutineRunner with static calls to allow execution of coroutines with management handles from anywhere in code.

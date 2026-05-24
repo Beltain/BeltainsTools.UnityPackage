@@ -8,9 +8,9 @@ namespace BeltainsTools
         public static Vector3 SetY(this Vector3 vector, float y) => new Vector3(vector.x, y, vector.z);
         public static Vector3 SetZ(this Vector3 vector, float z) => new Vector3(vector.x, vector.y, z);
 
-        public static Vector3 GetX(this Vector3 vector) => new Vector3(vector.x, 0f, 0f);
-        public static Vector3 GetY(this Vector3 vector) => new Vector3(0f, vector.y, 0f);
-        public static Vector3 GetZ(this Vector3 vector) => new Vector3(0f, 0f, vector.z);
+        public static Vector3 IsolateX(this Vector3 vector) => new Vector3(vector.x, 0f, 0f);
+        public static Vector3 IsolateY(this Vector3 vector) => new Vector3(0f, vector.y, 0f);
+        public static Vector3 IsolateZ(this Vector3 vector) => new Vector3(0f, 0f, vector.z);
 
         public static Vector2 ToVector2XY(this Vector3 vector) => new Vector2(vector.x, vector.y);
         public static Vector2 ToVector2XZ(this Vector3 vector) => new Vector2(vector.x, vector.z);
