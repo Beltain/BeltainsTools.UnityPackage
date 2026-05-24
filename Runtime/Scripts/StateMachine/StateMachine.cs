@@ -4,25 +4,26 @@ using UnityEngine;
 
 namespace BeltainsTools.FSM
 {
-    public class StateMachine
+    public class StateMachine<T> where T : IState
     {
         private StateHandler m_Current;
         private Dictionary<System.Type, StateHandler> m_States = new Dictionary<System.Type, StateHandler>();
         private HashSet<ITransition> m_FromAnyTransitions = new HashSet<ITransition>();
 
+        public T Current => m_Current != null ? m_Current.State : default;
 
         private class StateHandler
         {
-            public IState State { get; }
+            public T State { get; }
             public HashSet<ITransition> Transitions { get; }
 
-            public StateHandler(IState state)
+            public StateHandler(T state)
             {
                 State = state;
                 Transitions = new HashSet<ITransition>();
             }
 
-            public void AddTransition(IState to, IPredicate predicate)
+            public void AddTransition(T to, IPredicate predicate)
             {
                 Transitions.Add(new Transition(to, predicate));
             }
@@ -30,7 +31,7 @@ namespace BeltainsTools.FSM
 
 
 
-        public void SetState(IState state)
+        public void SetState(T state)
         {
             if (state != null)
             {
@@ -43,13 +44,13 @@ namespace BeltainsTools.FSM
             }
         }
 
-        private void SwitchState(IState state)
+        private void SwitchState(T state)
         {
-            if (m_Current != null && state == m_Current.State)
+            if (m_Current != null && state.Equals(m_Current.State))
                 return;
 
-            IState prev = m_Current != null ? m_Current.State : null;
-            IState next = GetOrCreateStateHandler(state).State; // get our managed ref
+            T prev = m_Current != null ? m_Current.State : default;
+            T next = GetOrCreateStateHandler(state).State; // get our managed ref
 
             prev?.OnExit();
             next.OnEnter();
@@ -58,14 +59,14 @@ namespace BeltainsTools.FSM
         }
 
 
-        public void AddTransition(IState from, IState to, System.Func<bool> predicate) => AddTransition(from, to, (FuncPredicate)predicate);
-        public void AddTransition(IState from, IState to, IPredicate predicate)
+        public void AddTransition(T from, T to, System.Func<bool> predicate) => AddTransition(from, to, (FuncPredicate)predicate);
+        public void AddTransition(T from, T to, IPredicate predicate)
         {
             GetOrCreateStateHandler(from).AddTransition(GetOrCreateStateHandler(to).State, predicate);
         }
 
-        public void AddTransition(IState to, System.Func<bool> predicate) => AddTransition(to, (FuncPredicate)predicate);
-        public void AddTransition(IState to, IPredicate predicate)
+        public void AddTransition(T to, System.Func<bool> predicate) => AddTransition(to, (FuncPredicate)predicate);
+        public void AddTransition(T to, IPredicate predicate)
         {
             m_FromAnyTransitions.Add(new Transition(GetOrCreateStateHandler(to).State, predicate));
         }
@@ -99,7 +100,7 @@ namespace BeltainsTools.FSM
         }
 
 
-        private StateHandler GetOrCreateStateHandler(IState state)
+        private StateHandler GetOrCreateStateHandler(T state)
         {
             if (!m_States.TryGetValue(state.GetType(), out StateHandler stateHandler))
             {
@@ -119,7 +120,7 @@ namespace BeltainsTools.FSM
                 return;
 
             if (TryGetAnyTransition(m_Current, out ITransition transition))
-                SwitchState(transition.To);
+                SwitchState((T)transition.To);
 
             m_Current.State.OnUpdate();
         }
@@ -140,4 +141,6 @@ namespace BeltainsTools.FSM
             m_Current.State.OnLateUpdate();
         }
     }
+
+    public class StateMachine : StateMachine<IState> { }
 }
