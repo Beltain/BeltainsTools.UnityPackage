@@ -71,4 +71,14 @@ namespace BeltainsTools.DataStructures
             }
         }
     }
+
+    public class FlagLabelAttribute : PropertyAttribute
+    {
+        public string FlagLabel { get; }
+
+        public FlagLabelAttribute(string flagLabel)
+        {
+            FlagLabel = flagLabel;
+        }
+    }
 }
