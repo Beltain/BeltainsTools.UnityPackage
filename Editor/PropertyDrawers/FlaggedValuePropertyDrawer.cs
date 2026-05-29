@@ -11,6 +11,8 @@ namespace BeltainsTools.Editor
         {
             EditorGUI.BeginProperty(position, label, property);
 
+            position = EditorGUI.IndentedRect(position);
+
             SerializedProperty flagProp = property.FindPropertyRelative("IsFlagged");
             SerializedProperty valueProp = property.FindPropertyRelative("Value");
 
