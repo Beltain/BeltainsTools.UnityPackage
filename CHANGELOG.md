@@ -1,3 +1,9 @@
+## [0.2.3-alpha] - [29/05/26]
+### Some minor StateMachine tweaks, added FlaggedValue
+* Changed IState interface to require full interface implementation.
+* Exposed events in the StateMachine for switching/entering/exiting states
+* Added FlaggedValue for easy in-inspector value flagging 
+
 ## [0.2.2-alpha] - [24/05/26]
 ### Added VectorInt extensions
 

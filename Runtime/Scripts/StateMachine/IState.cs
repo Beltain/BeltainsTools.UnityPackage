@@ -2,10 +2,10 @@ namespace BeltainsTools.FSM
 {
     public interface IState
     {
-        public void OnEnter() { }
-        public void OnUpdate() { }
-        public void OnFixedUpdate() { }
-        public void OnLateUpdate() { }
-        public void OnExit() { }
+        void OnEnter();
+        void OnUpdate();
+        void OnFixedUpdate();
+        void OnLateUpdate();
+        void OnExit();
     }
 }

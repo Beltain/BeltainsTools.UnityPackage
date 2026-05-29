@@ -1,3 +1,4 @@
+using BeltainsTools.EventHandling;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,6 +12,10 @@ namespace BeltainsTools.FSM
         private HashSet<ITransition> m_FromAnyTransitions = new HashSet<ITransition>();
 
         public T Current => m_Current != null ? m_Current.State : default;
+
+        public BEvent<T> StateExitedEvent;
+        public BEvent<T> StateEnteredEvent;
+        public BEvent<T, T> StateSwitchedEvent;
 
         private class StateHandler
         {
@@ -37,6 +42,7 @@ namespace BeltainsTools.FSM
             {
                 m_Current = GetOrCreateStateHandler(state);
                 m_Current.State.OnEnter();
+                StateEnteredEvent.Invoke(m_Current.State);
             }
             else
             {
@@ -53,9 +59,12 @@ namespace BeltainsTools.FSM
             T next = GetOrCreateStateHandler(state).State; // get our managed ref
 
             prev?.OnExit();
+            StateExitedEvent.Invoke(prev);
             next.OnEnter();
-
             m_Current = GetOrCreateStateHandler(state);
+
+            StateEnteredEvent.Invoke(next);
+            StateSwitchedEvent.Invoke(prev, next);
         }
 
 
