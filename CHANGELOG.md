@@ -1,3 +1,8 @@
+## [0.2.4-alpha] - [31/05/26]
+### Added PlayerInteraction.InputRouter
+* Added Input Router component to mimic most of the functionality of Unity's EventSystem + InputSystemUIInputModule components with a more general focus (Unlike EventSystem which is heavily linked with UI). This also allows us to split event input (ie, UI button navigation) from general player interaction input.
+* Added IRaycastStrategy and basic Raycast Strategy components to allow us to filter hits.
+
 ## [0.2.3-alpha] - [29/05/26]
 ### Some minor StateMachine tweaks, added FlaggedValue
 * Changed IState interface to require full interface implementation.
