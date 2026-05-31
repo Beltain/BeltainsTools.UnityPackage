@@ -215,7 +215,7 @@ namespace BeltainsTools.Debugging
 
             List<string> textTokensAfterAutoComplete = m_CurTextTokens.SkipLast(1).ToList();
             string autofillStringToken = m_SelectedAutofillString;
-            if (Input.GetKey(KeyCode.LeftShift))
+            if (Keyboard.current.leftShiftKey.isPressed)
             {
                 int endOfCurTextToken = m_CurTextTokens[m_CurTextTokens.Length - 1].Length;
                 for (int i = endOfCurTextToken; i < autofillStringToken.Length; i++)
@@ -463,9 +463,9 @@ namespace BeltainsTools.Debugging
 
         void OnEndEdit(string endValue)
         {
-            if(Input.GetKeyDown(KeyCode.Return))
+            if( Keyboard.current.enterKey.wasPressedThisFrame)
                 AttemptDebugCommand(endValue);
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 if (TryCloseAutofill())
                 {
