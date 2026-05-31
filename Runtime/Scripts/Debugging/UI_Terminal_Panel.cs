@@ -8,6 +8,7 @@ using UnityEngine.EventSystems;
 using System.Linq;
 using BeltainsTools.Utilities;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 namespace BeltainsTools.Debugging
 {
@@ -519,25 +520,25 @@ namespace BeltainsTools.Debugging
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.UpArrow))
+            if (Keyboard.current.upArrowKey.wasPressedThisFrame)
             {
                 if (AutofillActive)
                     NavigateAutofillSelection(-1);
                 else
                     CycleSearchHistory(1);
             }
-            else if (Input.GetKeyDown(KeyCode.DownArrow))
+            else if (Keyboard.current.downArrowKey.wasPressedThisFrame)
             {
                 if (AutofillActive)
                     NavigateAutofillSelection(1);
                 else
                     CycleSearchHistory(-1);
             }
-            else if (Input.GetKeyDown(KeyCode.Tab))
+            else if (Keyboard.current.tabKey.wasPressedThisFrame)
             {
                 TryApplyCurrentAutofill();
             }
-            else if (Input.GetKeyDown(KeyCode.Escape))
+            else if (Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 TryCloseAutofill();
             }
