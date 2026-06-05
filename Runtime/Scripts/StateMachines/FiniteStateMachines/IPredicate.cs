@@ -1,4 +1,4 @@
-namespace BeltainsTools.FSM
+namespace BeltainsTools.StateMachines.FSM
 {
     public interface IPredicate
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-namespace BeltainsTools.FSM
+namespace BeltainsTools.StateMachines.FSM
 {
     public class StateMachine<T> where T : IState
     {

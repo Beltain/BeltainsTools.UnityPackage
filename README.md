@@ -8,6 +8,7 @@ Here's a rundown of the high level features of the package:
 * <b>BEvents</b> - An alternative to C# events with easier tracking of subscribers, and some other wrapper functions.
 * <b>Debugging Tools</b> - A powerful debugging overlay that allows for executing commands as well as telemetry readouts.
 * <b>Coroutine Yield Instructions</b> - Some useful yield instructions to improve coroutine readability and implementation.
+* <b>Coroutine Runner</b> - A universally accessible coroutine runner that allows starting and awaiting coroutine completion from anywhere in the project.
 * <b>More Handles/Gizmos</b> - Extra gizmos for drawing a wider variety of shapes.
 * <b>Math Library</b> - Additional maths functions located in the MathB class as well as support for other specific maths bits like Beziers.
 * <b>Gameplay Components</b> - Added specific gameplay components for things like Billboards, Grids, Capturing Screenshots, and better Trigger Handling.
@@ -15,6 +16,8 @@ Here's a rundown of the high level features of the package:
 * <b>IO</b> - Includes and easy to use compressed file saving/loading system.
 * <b>UI Line Renderer</b> - A user friendly line renderer for Unity's canvas renderer.
 * <b>UI Line Graph</b> - A simple line graph component that allows for dataset readouts.
+* <b>State Machine Frameworks</b> - Code frameworks for Finite and Hierarchical Finite State Machines, with the latter supporting transition sequencing.
+
 
 ## Contributions
 I'm not currently accepting contributions to this package. Just wanted to make it public. Thanks for your interest though.
