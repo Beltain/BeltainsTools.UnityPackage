@@ -23,7 +23,7 @@ namespace BeltainsTools.Utilities
         /// <returns>Whether the array can currently fit the required size (true if no resize was necessary)</returns>
         public static bool TryFitPowTwo<T>(ref T[] array, int requiredSize)
         {
-            int arraySize = array != null ? array.Length : 1;
+            int arraySize = array != null ? array.Length : 0;
             if (arraySize >= requiredSize)
                 return true;
 
