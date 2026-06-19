@@ -13,6 +13,12 @@ namespace BeltainsTools.StateMachines.HSM
 
         private bool m_Started = false;
 
+        public static StateMachine BuildFrom(State rootState, TransitionSequencer.SequencingModes sequencingMode = TransitionSequencer.SequencingModes.Sequential)
+        {
+            StateMachineBuilder builder = new StateMachineBuilder(rootState);
+            return builder.Build(sequencingMode);
+        }
+
         public StateMachine(State rootState, TransitionSequencer.SequencingModes sequencingMode = TransitionSequencer.SequencingModes.Sequential)
         {
             d.Assert(rootState != null, "State machine root state cannot be null!");
