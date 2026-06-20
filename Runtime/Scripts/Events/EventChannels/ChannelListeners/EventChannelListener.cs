@@ -11,6 +11,7 @@ namespace BeltainsTools.EventHandling
         [SerializeField]
         protected UnityEvent m_Response;
 
+        [System.NonSerialized]
         public BEvent ResponseEvent;
 
         protected virtual void OnEventRaised() { }
@@ -40,6 +41,7 @@ namespace BeltainsTools.EventHandling
         [SerializeField]
         protected UnityEvent<T> m_Response;
 
+        [System.NonSerialized]
         public BEvent<T> ResponseEvent;
 
         protected virtual void OnEventRaised(T value) { }

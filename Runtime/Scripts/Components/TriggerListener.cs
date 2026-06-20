@@ -18,9 +18,13 @@ namespace BeltainsTools
         [SerializeField] protected UnityEngine.Events.UnityEvent TriggerExitActions;
         [SerializeField] protected UnityEngine.Events.UnityEvent TriggerStayActions;
 
+        [System.NonSerialized]
         public BEvent<Collider> TriggerEnterEvent;
+        [System.NonSerialized]
         public BEvent<Collider> TriggerExitEvent;
+        [System.NonSerialized]
         public BEvent<Collider> TriggerStayEvent;
+        [System.NonSerialized]
         public BEvent<Collider, EventTypes> TriggeredEvent;
 
         public enum EventTypes

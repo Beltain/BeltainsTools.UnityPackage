@@ -11,7 +11,7 @@ namespace BeltainsTools.Collections.Generic
         [SerializeField]
         private List<ItemStack> m_ItemStacks = new List<ItemStack>();
         /// <summary>This is for tracking what items we've had in the inventory at any point in time, even if we don't have them currently</summary>
-        [SerializeField]
+        
         private HashSet<TItemType> m_ItemHistory = new HashSet<TItemType>();
 
         public IReadOnlyCollection<ItemStack> ItemStacks => m_ItemStacks;
@@ -19,7 +19,9 @@ namespace BeltainsTools.Collections.Generic
 
         public bool IsEmpty => m_ItemStacks.Count == 0;
 
+        [System.NonSerialized]
         public BEvent<Inventory<TItemType>> StacksChangedEvent;
+        [System.NonSerialized]
         public BEvent<Inventory<TItemType>> ItemHistoryChangedEvent;
 
 

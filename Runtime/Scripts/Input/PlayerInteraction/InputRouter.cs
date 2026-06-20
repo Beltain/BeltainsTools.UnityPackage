@@ -138,7 +138,7 @@ namespace BeltainsTools.PlayerInteraction
         }
 
 
-        private GameObject ResolveRaycast(out bool isOverUI)
+        private GameObject ResolveRaycast(out bool isOverUI, out Vector3 hitPoint, out Vector3 hitNormal)
         {
             LayerMask mask = m_BaseLayerMask;
             foreach (IRaycastStrategy strategy in m_ActiveRaycastStrategies)
@@ -146,11 +146,11 @@ namespace BeltainsTools.PlayerInteraction
             foreach (IRaycastStrategy strategy in m_ActiveRaycastStrategies)
                 mask &= ~strategy.GetLayerMaskBlacklist();
 
-            GameObject gameObject = ResolveRaycastUI(mask, out isOverUI);
+            GameObject gameObject = ResolveRaycastUI(mask, out isOverUI, out hitPoint, out hitNormal);
             if (gameObject != null)
                 return gameObject;
 
-            return isOverUI ? null : ResolveRaycastWorld(mask); // only raycast world if not over UI
+            return isOverUI ? null : ResolveRaycastWorld(mask, out hitPoint, out hitNormal); // only raycast world if not over UI
         }
 
         private bool ValidateRaycastGameObject(GameObject gameObject)
@@ -160,11 +160,13 @@ namespace BeltainsTools.PlayerInteraction
                 (m_ActiveRaycastStrategies.Count == 0 || m_ActiveRaycastStrategies.Any(r => r.GetValidateTarget(gameObject))); // filter out non-whitelisted
         }
 
-        private GameObject ResolveRaycastUI(LayerMask raycastMask, out bool isOverUI) // defers to unity graphic raycaster but with some additional filtering on top
+        private GameObject ResolveRaycastUI(LayerMask raycastMask, out bool isOverUI, out Vector3 hitPoint, out Vector3 hitNormal) // defers to unity graphic raycaster but with some additional filtering on top
         {
             if (m_GraphicRaycaster == null)
             {
                 isOverUI = false;
+                hitPoint = Vector3.negativeInfinity;
+                hitNormal = Vector3.negativeInfinity;
                 return null;
             }
 
@@ -174,16 +176,22 @@ namespace BeltainsTools.PlayerInteraction
             m_GraphicRaycaster.Raycast(pointerEventData, s_RaycastResultsCache);
             isOverUI = s_RaycastResultsCache.Count > 0; // includes non-interactable graphics, which is what we want for blocking interaction with the world behind UI
 
-            gameObject = s_RaycastResultsCache.FirstOrDefault(
-                r => r.isValid && 
-                (1 << r.gameObject.layer & raycastMask) != 0 && 
-                ValidateRaycastGameObject(r.gameObject)).gameObject;
+            RaycastResult firstValidResult = s_RaycastResultsCache.FirstOrDefault(
+                r => r.isValid &&
+                (1 << r.gameObject.layer & raycastMask) != 0 &&
+                ValidateRaycastGameObject(r.gameObject));
+            gameObject = firstValidResult.gameObject;
+            hitPoint = firstValidResult.worldPosition;
+            hitNormal = firstValidResult.worldNormal;
             s_RaycastResultsCache.Clear();
             return gameObject;
         }
 
-        private GameObject ResolveRaycastWorld(LayerMask raycastMask)
+        private GameObject ResolveRaycastWorld(LayerMask raycastMask, out Vector3 hitPoint, out Vector3 hitNormal)
         {
+            hitPoint = Vector3.negativeInfinity;
+            hitNormal = Vector3.negativeInfinity;
+
             if (Camera.main == null)
                 return null;
 
@@ -196,6 +204,8 @@ namespace BeltainsTools.PlayerInteraction
                 RaycastHit hit = s_RaycastHitsCache[i];
                 if (!ValidateRaycastGameObject(hit.collider.gameObject))
                     continue;
+                hitPoint = hit.point;
+                hitNormal = hit.normal;
                 return hit.collider.gameObject;
             }
 
@@ -211,7 +221,7 @@ namespace BeltainsTools.PlayerInteraction
             Vector2 pointerPos = Pointer.current != null ? Pointer.current.position.ReadValue() : Vector2.zero;
             m_Pointer.ScreenPosition = pointerPos;
 
-            GameObject objectOver = ResolveRaycast(out m_Pointer.IsOverUI);
+            GameObject objectOver = ResolveRaycast(out m_Pointer.IsOverUI, out m_Pointer.HitPoint, out m_Pointer.HitNormal);
 
             if (m_Pointer.GameObjectOver != objectOver)
                 m_Pointer.GameObjectOver = objectOver;
@@ -416,6 +426,8 @@ namespace BeltainsTools.PlayerInteraction
         public Vector2 ScreenPosition;
         public GameObject GameObjectOver;
         public bool IsOverUI;
+        public Vector3 HitPoint;
+        public Vector3 HitNormal;
 
         public GameObject LastHoverGameObject;
         public IHoverHandler[] HoverTargets;

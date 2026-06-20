@@ -1,4 +1,9 @@
 
+## [0.2.6-alpha] - [20/06/26]
+### Fixes to support Unity 6000.5's new stricter serialization requirements
+* Added some System.NonSerialized attributes across BEvent usages
+* Also some minor tweaks PlayerInteraction events
+
 ## [0.2.5-alpha] - [05/06/26]
 ### Hierarchical State Machines
 * Added HSMs under BeltainsTools.StateMachines.HSM namespace

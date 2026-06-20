@@ -12,9 +12,13 @@ namespace BeltainsTools.InputUtils
         [SerializeField]
         InputActionReference m_ActionRef;
 
+        [System.NonSerialized]
         public BEvent StartedEvent;
+        [System.NonSerialized]
         public BEvent CancelledEvent;
+        [System.NonSerialized]
         public BEvent DragStartedEvent;
+        [System.NonSerialized]
         public BEvent DragCancelledEvent;
 
         const float k_DragUnitsThreshold = 0.01f;
