@@ -30,61 +30,132 @@ public static class d
 
 
     #region Tracking_____Tracking_____Tracking_____Tracking_____Tracking_____Tracking_____Tracking_____Tracking
-    static Dictionary<string, TrackedObjectData> s_TrackedObjects = new Dictionary<string, TrackedObjectData>();
-    static bool s_TrackedObjectsUpdatedThisTick = false;
+    static Dictionary<string, TelemetryMessage> s_TelemetryMessages = new Dictionary<string, TelemetryMessage>();
+    static bool s_TelemetryMessagesUpdatedThisTick = false;
 
-    public static BEvent<IEnumerable<string>> TrackedObjectsUpdatedEvent;
+    public static BEvent<IEnumerable<TelemetryMessage>> TelemetryMessagesUpdatedEvent;
 
-    public static IEnumerable<string> GetTrackedMessages()
+    public static IEnumerable<TelemetryMessage> GetTrackedMessages()
     {
-        return s_TrackedObjects.Values.Select(r => r.Message).Reverse();
+        return s_TelemetryMessages.Values;
     }
 
-    class TrackedObjectData
+    public struct TelemetryMessage
     {
-        public string Message { get; private set; } = "";
+        public readonly string ID;
+        public readonly string Message;
+        public readonly string Group;
 
-        public void UpdateMessage(string message)
+        public TelemetryMessage(string id, string message, string group = null)
         {
+            ID = id;
             Message = message;
+            Group = group;
+        }
+
+        public static implicit operator string(TelemetryMessage message)
+        {
+            return message.Message;
         }
     }
 
+    /// <summary>A disposable handle that wraps a common usage of <see cref="d.SetTelemetryMessage(string, string)"/> and <see cref="d.RemoveTelemetryMessage(string)"/></summary>
+    public class TelemetryHandle : System.IDisposable
+    {
+        private string m_UID;
+        private string m_Group;
+        private string m_MessageFormat;
+
+        private string m_Message;
+
+        private bool m_IsDisposed;
+
+        public string Message
+        {
+            get => m_Message;
+            protected set
+            {
+                m_Message = value;
+                if (!string.IsNullOrEmpty(m_Message))
+                    d.SetTelemetryMessage(m_UID, m_Message, m_Group);
+                else
+                    d.RemoveTelemetryMessage(m_UID);
+            }
+        }
+
+        public static TelemetryHandle Create(object owner, string uidOverride = null) => Create(owner.GetType().Name, uidOverride);
+        public static TelemetryHandle Create(string group = null, string uidOverride = null) => CreateFormat("{0}", group, uidOverride);
+        public static TelemetryHandle CreateFormat(string format, object owner, string uidOverride = null) => CreateFormat(format, owner.GetType().Name, uidOverride);
+        public static TelemetryHandle CreateFormat(string format, string group = null, string uidOverride = null) => new TelemetryHandle(format, uidOverride ?? System.Guid.NewGuid().ToString(), group);
+        public static TelemetryHandle CreateTitled(string title, object owner, string uidOverride = null) => CreateTitledFormat(title, "{0}", owner.GetType().Name, uidOverride);
+        public static TelemetryHandle CreateTitled(string title, string group = null, string uidOverride = null) => CreateTitledFormat(title, "{0}", group, uidOverride);
+        public static TelemetryHandle CreateTitledFormat(string title, string valueFormat, object owner, string uidOverride = null) => CreateTitledFormat(title, valueFormat, owner.GetType().Name, uidOverride);
+        public static TelemetryHandle CreateTitledFormat(string title, string valueFormat, string group = null, string uidOverride = null) => new TelemetryHandle($"{title}: {valueFormat}", uidOverride ?? System.Guid.NewGuid().ToString(), group);
+
+        protected TelemetryHandle(string format, string uid, string group = null)
+        {
+            m_MessageFormat = format;
+            m_UID = uid;
+            m_Group = group;
+        }
+
+        ~TelemetryHandle()
+        {
+            OnDispose(disposing: false);
+        }
+
+        public void Set(object value)
+        {
+            Message = string.Format(m_MessageFormat, value);
+        }
+
+        public void Dispose()
+        {
+            OnDispose(disposing: true);
+            System.GC.SuppressFinalize(this);
+        }
+
+        protected virtual void OnDispose(bool disposing)
+        {
+            if (m_IsDisposed)
+                return;
+            Clear();
+            m_IsDisposed = true;
+        }
+
+        public void Clear()
+        {
+            d.RemoveTelemetryMessage(m_UID);
+        }
+    }
 
     static void TickTrackedObjects()
     {
-        if (!s_TrackedObjectsUpdatedThisTick)
+        if (!s_TelemetryMessagesUpdatedThisTick)
             return;
-        s_TrackedObjectsUpdatedThisTick = false;
+        s_TelemetryMessagesUpdatedThisTick = false;
 
-        TrackedObjectsUpdatedEvent.Invoke(GetTrackedMessages());
+        TelemetryMessagesUpdatedEvent.Invoke(GetTrackedMessages());
     }
 
-
-    /// <summary>No reason to use this over <see cref="Track(string, object)"/>. Keeping for posterity...</summary>
-    [System.Obsolete]
-    public static void TrackFormat(string id, string messageFormat, params object[] args) => Track(id, string.Format(messageFormat, args));
-    public static void Track(string id, object message)
+    [System.Obsolete("Use SetTelemetryMessage, or .Set() telemetry objects instead.")]
+    public static void Track(string id, string message) => SetTelemetryMessage(id, message);
+    public static void SetTelemetryMessage(string id, string message, string group = null)
     {
         if (!DebugActive)
             return;
-
-        if (!s_TrackedObjects.ContainsKey(id))
-            s_TrackedObjects.Add(id, new TrackedObjectData());
-
-        s_TrackedObjects[id].UpdateMessage((string)message);
-        s_TrackedObjectsUpdatedThisTick = true;
+        s_TelemetryMessages[id] = new TelemetryMessage(id, message, group);
+        s_TelemetryMessagesUpdatedThisTick = true;
     }
 
-    public static void StopTracking(string id)
+    [System.Obsolete("Use RemoveTelemetryMessage, or .Clear() telemetry objects instead.")]
+    public static void StopTracking(string id) => RemoveTelemetryMessage(id);
+    public static void RemoveTelemetryMessage(string id)
     {
         if (!DebugActive)
             return;
-
-        if (!s_TrackedObjects.ContainsKey(id))
-            return;
-        s_TrackedObjects.Remove(id);
-        s_TrackedObjectsUpdatedThisTick = true;
+        s_TelemetryMessages.Remove(id);
+        s_TelemetryMessagesUpdatedThisTick = true;
     }
     #endregion ________________________________________________________________________________________________
 

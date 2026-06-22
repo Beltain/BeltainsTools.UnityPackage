@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using BeltainsTools.EventHandling;
 
 namespace BeltainsTools.Debugging
 {
@@ -12,6 +13,8 @@ namespace BeltainsTools.Debugging
 
         Color m_DefaultColor = Color.magenta;
 
+        [System.NonSerialized]
+        public BEvent<UI_TextOutput_Element> RecycledEvent;
 
         public void SetText(string text)
         {
@@ -33,6 +36,11 @@ namespace BeltainsTools.Debugging
         void OnSpawn()
         {
             ResetBackgroundColor();
+        }
+
+        private void OnRecycle()
+        {
+            RecycledEvent.Invoke(this);
         }
     }
 }

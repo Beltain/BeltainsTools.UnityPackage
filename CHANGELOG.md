@@ -1,3 +1,7 @@
+## [0.2.7-alpha] - [22/06/26]
+### Improvements to debugging Telemetry
+* Cleaned up telemetry tracking API to clarify usage
+* Added handles for easier and more robust message management and updating
 
 ## [0.2.6-alpha] - [20/06/26]
 ### Fixes to support Unity 6000.5's new stricter serialization requirements

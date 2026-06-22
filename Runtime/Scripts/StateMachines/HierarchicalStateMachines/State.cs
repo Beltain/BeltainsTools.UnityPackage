@@ -40,16 +40,15 @@ namespace BeltainsTools.StateMachines.HSM
             return null;
         }
 
-        public static string GetAncestralPath(State state)
-        {
-            return string.Join(" > ", state.GetAncestors().Reverse().Select(s => s.GetType().Name));
-        }
-
-
         public State(StateMachine machine, State parent)
         {
             Machine = machine;
             Parent = parent;
+        }
+
+        public override string ToString()
+        {
+            return string.Join(" > ", GetAncestors().Reverse().Select(s => s.GetType().Name));
         }
 
         public void AddActivity(IActivity activity)
