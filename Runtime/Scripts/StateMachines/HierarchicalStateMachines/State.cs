@@ -58,6 +58,18 @@ namespace BeltainsTools.StateMachines.HSM
             m_Activities.Add(activity);
         }
 
+        public State GetLowestInitialSubState()
+        {
+            State current = this;
+            while (true)
+            {
+                State initialSubState = current.GetInitialSubState();
+                if (initialSubState == null)
+                    return current;
+                current = initialSubState;
+            }
+        }
+
         /// <returns>The initial sub-state of this state, or null if we're a leaf state</returns>
         protected virtual State GetInitialSubState() => null;
         /// <returns>Which state to transition to this frame, or null if we shouldn't</returns>

@@ -28,11 +28,11 @@ namespace BeltainsTools.StateMachines.HSM
             public State To;
             public State LCA;
 
-            public bool IsValid => From != null && To != null;
+            public bool IsValid => To != null;
 
-            public TransitionData(State from, State to) { From = from; To = to; LCA = From.GetLowestCommonAncestor(To); }
+            public TransitionData(State from, State to) { From = from; To = to; LCA = From == null ? To.Machine.RootState : From.GetLowestCommonAncestor(To); }
 
-            public void Clear() { this.From = null; this.To = null; }
+            public void Clear() { this.From = null; this.To = null; this.LCA = null; }
         }
 
         /// <summary>Executor for the sub-stages of transitions, their "phases"</summary>
@@ -129,7 +129,10 @@ namespace BeltainsTools.StateMachines.HSM
         private void BeginTransition(TransitionData transition)
         {
             m_ActiveTransitionData = transition;
-            TransitionStartExitPhase();
+            if (transition.From != null)
+                TransitionStartExitPhase();
+            else
+                TransitionEndExitPhase(); // skip exit if we don't have a "from"
         }
 
         private void TransitionStartExitPhase()

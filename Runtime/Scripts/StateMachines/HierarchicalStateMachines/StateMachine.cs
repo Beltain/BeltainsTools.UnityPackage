@@ -36,7 +36,7 @@ namespace BeltainsTools.StateMachines.HSM
             if (m_Started)
                 return;
             m_Started = true;
-            RootState.Enter();
+            Sequencer.RequestTransition(null, RootState.GetLowestInitialSubState());
         }
 
         public void Update() => Update(Time.deltaTime);
@@ -67,12 +67,15 @@ namespace BeltainsTools.StateMachines.HSM
 
         public void ChangeState(State from, State to)
         {
-            if (from == to || from == null || to == null)
+            if (from == to || to == null)
                 return;
 
-            State commonAncestor = from.GetLowestCommonAncestor(to);
-            foreach (State ancestorState in from.WalkUpTo(commonAncestor, inclusive: false))
-                ancestorState.Exit();
+            State commonAncestor = from == null ? RootState : from.GetLowestCommonAncestor(to);
+            if (from != null)
+            {
+                foreach (State ancestorState in from.WalkUpTo(commonAncestor, inclusive: false))
+                    ancestorState.Exit();
+            }
             foreach (State descendantState in commonAncestor.WalkDownTo(to, inclusive: false))
                 descendantState.Enter();
         }
