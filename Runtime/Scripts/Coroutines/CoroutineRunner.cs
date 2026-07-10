@@ -104,7 +104,9 @@ namespace BeltainsTools.Coroutines
         private readonly MonoBehaviour m_Runner = null;
         private readonly System.Action<RunHandle, bool> m_OnStoppedCallback;
 
-        private bool m_IsRunning = false;
+        private IEnumerator m_RunnerCo = null;
+
+        private bool IsRunning => m_RunnerCo != null;
 
         /// <param name="onStoppedCallback">outputs true if completed, false if stopped before completion</param>
         public RunHandle(IEnumerator coroutine, MonoBehaviour runner, System.Action<RunHandle, bool> onStoppedCallback)
@@ -116,11 +118,11 @@ namespace BeltainsTools.Coroutines
 
         public void Start()
         {
-            if (m_IsRunning)
+            if (IsRunning)
                 return;
 
-            m_IsRunning = true;
-            m_Runner.StartCoroutine(RunCoroutineCo());
+            m_RunnerCo = RunCoroutineCo();
+            m_Runner.StartCoroutine(m_RunnerCo);
         }
 
         private IEnumerator RunCoroutineCo()
@@ -131,11 +133,12 @@ namespace BeltainsTools.Coroutines
 
         public void Stop(bool isComplete)
         {
-            if (!m_IsRunning)
+            if (!IsRunning)
                 return;
 
-            m_IsRunning = false;
-            m_Runner.StopCoroutine(m_Co);
+            m_Runner.StopCoroutine(m_RunnerCo);
+            m_RunnerCo = null;
+
             m_OnStoppedCallback?.Invoke(this, isComplete);
         }
 

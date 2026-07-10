@@ -2,8 +2,12 @@
 // (or https://github.com/adammyhre/Unity-Hierarchical-StateMachine/tree/master)
 // THANK YOU GIT-AMEND YOU LEGEND
 
+using BeltainsTools.EventHandling;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace BeltainsTools.StateMachines.HSM
@@ -18,7 +22,12 @@ namespace BeltainsTools.StateMachines.HSM
 
         private readonly List<IActivity> m_Activities = new List<IActivity>();
 
-        public IReadOnlyList<IActivity> Activities => m_Activities;
+        /// <summary>Called once the state completes its activation sequence. After <see cref="Enter"/>.</summary>
+        [System.NonSerialized]
+        public BEvent ActivatedEvent;
+        /// <summary>Called once the state begins its deactivation sequence. Before <see cref="Exit"/>.</summary>
+        [System.NonSerialized]
+        public BEvent DeactivatingEvent;
 
 
         public static State GetLowestCommonAnscestor(State a, State b)
@@ -51,6 +60,29 @@ namespace BeltainsTools.StateMachines.HSM
             return string.Join(" > ", GetAncestors().Reverse().Select(s => s.GetType().Name));
         }
 
+        /// <returns>All activities that need to be activated</returns>
+        public IEnumerable<PhaseStep> GetActivationActivities()
+        {
+            foreach (IActivity activity in m_Activities)
+                if (activity.Status == IActivity.StatusTypes.Inactive)
+                    yield return activity.ActivateAsync;
+        }
+
+        /// <returns>All activities that need to be deactivated</returns>
+        public IEnumerable<PhaseStep> GetDeactivationActivities()
+        {
+            foreach (IActivity activity in m_Activities)
+                if (activity.Status == IActivity.StatusTypes.Active)
+                    yield return activity.DeactivateAsync;
+        }
+
+
+
+        public void AddActivationActivity(System.Func<IEnumerator> coroutineFactory, MonoBehaviour owner = null) => AddActivity(coroutineFactory, null, owner);
+        public void AddDeactivationActivity(System.Func<IEnumerator> coroutineFactory, MonoBehaviour owner = null) => AddActivity(null, coroutineFactory, owner);
+        public void AddActivity(System.Func<IEnumerator> activationCoroutineFactory, System.Func<IEnumerator> deactivationCoroutineFactory, MonoBehaviour owner = null)
+            => AddActivity(new CoroutineActivity(activationCoroutineFactory, deactivationCoroutineFactory, owner));
+
         public void AddActivity(IActivity activity)
         {
             if (activity == null)
@@ -76,6 +108,10 @@ namespace BeltainsTools.StateMachines.HSM
         protected virtual State GetTransition() => null;
 
         protected virtual void OnEnter() { }
+        /// <inheritdoc cref="ActivatedEvent"/>
+        protected virtual void OnActivationComplete() { }
+        /// <inheritdoc cref="DeactivatingEvent"/>
+        protected virtual void OnDeactivationBegun() { }
         protected virtual void OnExit() { }
         protected virtual void OnUpdate(float deltaTime) { }
         protected virtual void OnFixedUpdate() { }
@@ -88,6 +124,18 @@ namespace BeltainsTools.StateMachines.HSM
             OnEnter();
             State initialSubState = GetInitialSubState();
             initialSubState?.Enter();
+        }
+
+        internal void CompleteActivation()
+        {
+            OnActivationComplete();
+            ActivatedEvent.Invoke();
+        }
+
+        internal void BeginDeactivation()
+        {
+            DeactivatingEvent.Invoke();
+            OnDeactivationBegun();
         }
 
         internal void Exit() // depth first exit

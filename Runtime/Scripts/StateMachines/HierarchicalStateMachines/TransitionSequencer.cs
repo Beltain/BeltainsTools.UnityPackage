@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -28,11 +29,22 @@ namespace BeltainsTools.StateMachines.HSM
             public State To;
             public State LCA;
 
+            public IEnumerable<State> ExitChain;
+            public IEnumerable<State> EnterChain;
+
             public bool IsValid => To != null;
 
-            public TransitionData(State from, State to) { From = from; To = to; LCA = From == null ? To.Machine.RootState : From.GetLowestCommonAncestor(To); }
+            public TransitionData(State from, State to) 
+            { 
+                From = from; 
+                To = to; 
+                LCA = From == null ? To.Machine.RootState : From.GetLowestCommonAncestor(To); 
 
-            public void Clear() { this.From = null; this.To = null; this.LCA = null; }
+                ExitChain = From?.WalkUpTo(LCA, inclusive: false) ?? null;
+                EnterChain = LCA?.WalkDownTo(To, inclusive: false) ?? null;
+            }
+
+            public void Clear() { this.From = null; this.To = null; this.LCA = null; this.ExitChain = null; this.EnterChain = null; }
         }
 
         /// <summary>Executor for the sub-stages of transitions, their "phases"</summary>
@@ -92,16 +104,11 @@ namespace BeltainsTools.StateMachines.HSM
         {
             foreach (State state in stateChain)
             {
-                IReadOnlyList<IActivity> stateActivities = state.Activities;
-
-                for (int j = 0; j < stateActivities.Count; j++)
-                {
-                    IActivity activity = stateActivities[j];
-                    if (deactivate && activity.Status == IActivity.StatusTypes.Active)
-                        yield return activity.DeactivateAsync;
-                    else if (!deactivate && activity.Status == IActivity.StatusTypes.Inactive)
-                        yield return activity.ActivateAsync;
-                }
+                IEnumerable<PhaseStep> activities = deactivate ? 
+                    state.GetDeactivationActivities() : 
+                    state.GetActivationActivities();
+                foreach (PhaseStep step in activities)
+                    yield return step;
             }
         }
 
@@ -137,9 +144,12 @@ namespace BeltainsTools.StateMachines.HSM
 
         private void TransitionStartExitPhase()
         {
+            // mark deactivation started for the old state chain as started, from bottom to top
+            foreach (State state in m_ActiveTransitionData.ExitChain)
+                state.BeginDeactivation();
+
             // get and deactivate the old state chain's phase steps
-            IEnumerable<State> exitChain = m_ActiveTransitionData.From.WalkUpTo(m_ActiveTransitionData.LCA, inclusive: false);
-            m_PhaseExecutor.Start(GatherPhaseSteps(exitChain, deactivate: true), m_SequencingMode, TransitionEndExitPhase);
+            m_PhaseExecutor.Start(GatherPhaseSteps(m_ActiveTransitionData.ExitChain, deactivate: true), m_SequencingMode, TransitionEndExitPhase);
         }
 
         private void TransitionEndExitPhase()
@@ -151,12 +161,16 @@ namespace BeltainsTools.StateMachines.HSM
         private void TransitionStartEnterPhase()
         {
             // get and activate the new state chain's phase steps
-            IEnumerable<State> enterChain = m_ActiveTransitionData.LCA.WalkDownTo(m_ActiveTransitionData.To, inclusive: false);
-            m_PhaseExecutor.Start(GatherPhaseSteps(enterChain, deactivate: false), m_SequencingMode, TransitionEndEnterPhase);
+            m_PhaseExecutor.Start(GatherPhaseSteps(m_ActiveTransitionData.EnterChain, deactivate: false), m_SequencingMode, TransitionEndEnterPhase);
         }
 
         private void TransitionEndEnterPhase()
         {
+            // mark activation for the new state chain as complete, from top to bottom
+            foreach (State state in m_ActiveTransitionData.EnterChain)
+                state.CompleteActivation();
+
+            // finalise
             EndTransition();
         }
 

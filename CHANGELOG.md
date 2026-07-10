@@ -1,3 +1,6 @@
+## [0.2.8-alpha] - [10/07/26]
+### Fixes surrounding Coroutine Runner, Hierarchical State Machine
+
 ## [0.2.7-alpha] - [22/06/26]
 ### Improvements to debugging Telemetry
 * Cleaned up telemetry tracking API to clarify usage
