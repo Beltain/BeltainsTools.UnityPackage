@@ -6,8 +6,7 @@ using BeltainsTools.EventHandling;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Text;
 using UnityEngine;
 
 namespace BeltainsTools.StateMachines.HSM
@@ -18,9 +17,16 @@ namespace BeltainsTools.StateMachines.HSM
 
         public readonly StateMachine Machine;
         public readonly State Parent;
-        public State ActiveChild;
 
         private readonly List<IActivity> m_Activities = new List<IActivity>();
+        
+        public State ActiveChild;
+
+        private bool m_IsSuspendedSelf = false;
+
+        public bool IsSuspendedSelf => m_IsSuspendedSelf;
+        public bool IsSuspended { get; private set; } = false;
+
 
         /// <summary>Called once the state completes its activation sequence. After <see cref="Enter"/>.</summary>
         [System.NonSerialized]
@@ -57,7 +63,9 @@ namespace BeltainsTools.StateMachines.HSM
 
         public override string ToString()
         {
-            return string.Join(" > ", GetAncestors().Reverse().Select(s => s.GetType().Name));
+            IEnumerable<State> ancestors = GetAncestors();
+            IEnumerable<string> ancestorReadouts = ancestors.Reverse().Select(s => s.GetType().Name + (s.IsSuspended ? "[S]" : ""));
+            return string.Join(" > ", ancestorReadouts);
         }
 
         /// <returns>All activities that need to be activated</returns>
@@ -76,8 +84,6 @@ namespace BeltainsTools.StateMachines.HSM
                     yield return activity.DeactivateAsync;
         }
 
-
-
         public void AddActivationActivity(System.Func<IEnumerator> coroutineFactory, MonoBehaviour owner = null) => AddActivity(coroutineFactory, null, owner);
         public void AddDeactivationActivity(System.Func<IEnumerator> coroutineFactory, MonoBehaviour owner = null) => AddActivity(null, coroutineFactory, owner);
         public void AddActivity(System.Func<IEnumerator> activationCoroutineFactory, System.Func<IEnumerator> deactivationCoroutineFactory, MonoBehaviour owner = null)
@@ -90,16 +96,10 @@ namespace BeltainsTools.StateMachines.HSM
             m_Activities.Add(activity);
         }
 
-        public State GetLowestInitialSubState()
+        protected void TransitionTo(State targetState)
         {
-            State current = this;
-            while (true)
-            {
-                State initialSubState = current.GetInitialSubState();
-                if (initialSubState == null)
-                    return current;
-                current = initialSubState;
-            }
+            d.Assert(targetState != null, "Cannot transition to a null state!");
+            Machine.Sequencer.RequestTransition(this, targetState);
         }
 
         /// <returns>The initial sub-state of this state, or null if we're a leaf state</returns>
@@ -110,20 +110,27 @@ namespace BeltainsTools.StateMachines.HSM
         protected virtual void OnEnter() { }
         /// <inheritdoc cref="ActivatedEvent"/>
         protected virtual void OnActivationComplete() { }
-        /// <inheritdoc cref="DeactivatingEvent"/>
-        protected virtual void OnDeactivationBegun() { }
-        protected virtual void OnExit() { }
+        protected virtual void OnSuspend() { }
+        protected virtual void OnResume() { }
         protected virtual void OnUpdate(float deltaTime) { }
         protected virtual void OnFixedUpdate() { }
         protected virtual void OnLateUpdate(float deltaTime) { }
+        /// <inheritdoc cref="DeactivatingEvent"/>
+        protected virtual void OnDeactivationBegun() { }
+        protected virtual void OnExit() { }
 
-        internal void Enter() // parent enters before child
+        internal void Enter() // parent enters before child (parents enter, then suspend if necessary, then children enter, then active children suspend if necessary, all the way down the hierarchy)
         {
             if (Parent != null)
                 Parent.ActiveChild = this;
             OnEnter();
-            State initialSubState = GetInitialSubState();
-            initialSubState?.Enter();
+
+            UpdateSuspensionStatus(); // update suspension in case our parent is suspended and we are not, ensures this happens before any updates
+                                      // do this parents first
+
+            GetInitialSubState()?.Enter(); // Should anyways be covered by the state machine's transition sequencer,
+                                           // but just incase we are running raw state machine updates without the sequencer,
+                                           // we will manually enter the initial sub-state here
         }
 
         internal void CompleteActivation()
@@ -132,25 +139,39 @@ namespace BeltainsTools.StateMachines.HSM
             ActivatedEvent.Invoke();
         }
 
-        internal void BeginDeactivation()
+        protected void Suspend() => SetSuspendedSelf(true);
+        protected void Resume() => SetSuspendedSelf(false);
+        protected void SetSuspendedSelf(bool suspended)
         {
-            DeactivatingEvent.Invoke();
-            OnDeactivationBegun();
+            m_IsSuspendedSelf = suspended;
+            UpdateSuspensionStatus();
         }
 
-        internal void Exit() // depth first exit
+        internal void UpdateSuspensionStatus()
         {
-            ActiveChild?.Exit();
-            ActiveChild = null;
-            OnExit();
+            bool isSuspended = m_IsSuspendedSelf || (Parent?.IsSuspended ?? false);
+            if (isSuspended != IsSuspended)
+            {
+                IsSuspended = isSuspended;
+
+                ActiveChild?.UpdateSuspensionStatus();
+
+                if (IsSuspended)
+                    OnSuspend();
+                else
+                    OnResume();
+            }
         }
 
         internal void Update(float deltaTime)
         {
+            if (IsSuspended)
+                return;
+
             State transitionState = GetTransition();
             if (transitionState != null)
             {
-                Machine.Sequencer.RequestTransition(this, transitionState);
+                TransitionTo(transitionState);
                 return;
             }
 
@@ -160,24 +181,49 @@ namespace BeltainsTools.StateMachines.HSM
 
         internal void FixedUpdate()
         {
+            if (IsSuspended)
+                return;
+
             ActiveChild?.FixedUpdate();
             OnFixedUpdate();
         }
 
         internal void LateUpdate(float deltaTime)
         {
+            if (IsSuspended)
+                return;
+
             ActiveChild?.LateUpdate(deltaTime);
             OnLateUpdate(deltaTime);
         }
 
-        /// <returns>Returns the deepest currently active descendant state relative to this state</returns>
-        public State GetLeaf()
+        internal void BeginDeactivation()
         {
-            State current = this;
-            while (current.ActiveChild != null) 
-                current = current.ActiveChild;
-            return current;
+            DeactivatingEvent.Invoke();
+            OnDeactivationBegun();
         }
+
+        internal void Exit() // depth first exit (leaf resumes, exits, then parents resume and exit all the way up the chain)
+        {
+            // resume just before OnExit to ensure we Exit as the absolute last step of the deactivation sequence,
+            // beven if we were suspended before, this cleans us up right before exiting
+            // v This is a little trick to ensure our children can unsuspend,
+            // v if we left ourselves suspended before exiting, they would be locked in suspension
+            bool wasSuspended = IsSuspended;
+            IsSuspended = false; // temporarily unsuspend ourselves so that our children can unsuspend themselves and run their exit logic, even if we were suspended before
+            //
+
+            ActiveChild?.Exit();
+            ActiveChild = null;
+
+            IsSuspended = wasSuspended;
+            Resume(); // now that we've reached the leaf, we can fire our actual unsuspension logic.
+                      // Doing it this way ensures all the parents are unsuspended and don't block child unsuspension
+                      // while children also fire their unsuspension logic depth-first, inline with our exit logic ordering
+
+            OnExit();
+        }
+
 
         /// <inheritdoc cref="GetLowestCommonAnscestor(State, State)"/>
         public State GetLowestCommonAncestor(State other)
@@ -213,6 +259,32 @@ namespace BeltainsTools.StateMachines.HSM
                 yield return stack.Pop();
         }
 
+        public State GetLowestInitialSubState()
+        {
+            State current = this;
+            while (true)
+            {
+                State initialSubState = current.GetInitialSubState();
+                if (initialSubState == null)
+                    return current;
+                current = initialSubState;
+            }
+        }
+
+        /// <inheritdoc cref="GetAncestor(System.Type)"/>
+        public T GetAncestor<T>() where T : State => (T)GetAncestor(typeof(T));
+        /// <returns>The first <see cref="Parent"/> that matches the provided <see cref="State"/> type</returns>
+        public State GetAncestor(System.Type type)
+        {
+            d.Assert(type.IsSubclassOf(typeof(State)), "Ancestor State Type must be a subclass of State when trying to get state ancestor!");
+            foreach (State parent in GetAncestors())
+            {
+                if (type.IsAssignableFrom(parent.GetType()))
+                    return parent;
+            }
+            return null;
+        }
+
         /// <summary>Walks up the state chain and returns all ancestors of this state, starting with this state and ending with the root</summary>
         public IEnumerable<State> GetAncestors()
         {
@@ -220,11 +292,13 @@ namespace BeltainsTools.StateMachines.HSM
                 yield return current;
         }
 
-        /// <summary>Walks down the state chain and returns all descendants of this state, starting with this state and ending with the deepest active descendant</summary>
-        public IEnumerable<State> GetDescendants()
+        /// <returns>Returns the deepest currently active descendant state relative to this state</returns>
+        public State GetLeaf()
         {
-            for (State current = this; current != null; current = current.ActiveChild)
-                yield return current;
+            State current = this;
+            while (current.ActiveChild != null)
+                current = current.ActiveChild;
+            return current;
         }
     }
 }

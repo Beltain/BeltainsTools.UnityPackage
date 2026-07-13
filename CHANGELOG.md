@@ -1,3 +1,9 @@
+## [0.2.9-alpha] - [13/07/26]
+### Some more Hierarchical State Machine love
+* Added additional API for streamlined access of ancestors per state
+* Added suspend/resume logic to states, to allow some form of interruption
+* Fixed transitions sometimes ignoring Activities when transitioning to parent states and not directly to initial substates.
+
 ## [0.2.8-alpha] - [10/07/26]
 ### Fixes surrounding Coroutine Runner, Hierarchical State Machine
 

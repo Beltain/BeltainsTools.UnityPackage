@@ -120,6 +120,8 @@ namespace BeltainsTools.StateMachines.HSM
 
         public void RequestTransition(State from, State to)
         {
+            d.AssertFormat(to != null, "Trying to request a transition to a null state! from: {0}. This is not possible! Please fix me!", from);
+            to = to.GetLowestInitialSubState();
             TransitionData transition = new TransitionData(from, to);
             if (!transition.IsValid)
                 return;

@@ -26,6 +26,13 @@ namespace BeltainsTools.StateMachines.HSM
             Sequencer = new TransitionSequencer(this, sequencingMode);
         }
 
+        public override string ToString()
+        {
+            return RootState != null ?
+                RootState.GetLeaf().ToString() :
+                "Invalid State Machine";
+        }
+
         public void Start()
         {
             EnsureStarted();
@@ -36,7 +43,7 @@ namespace BeltainsTools.StateMachines.HSM
             if (m_Started)
                 return;
             m_Started = true;
-            Sequencer.RequestTransition(null, RootState.GetLowestInitialSubState());
+            Sequencer.RequestTransition(null, RootState);
         }
 
         public void Update() => Update(Time.deltaTime);
