@@ -88,6 +88,11 @@ namespace BeltainsTools.StateMachines.HSM
         public void AddDeactivationActivity(System.Func<IEnumerator> coroutineFactory, MonoBehaviour owner = null) => AddActivity(null, coroutineFactory, owner);
         public void AddActivity(System.Func<IEnumerator> activationCoroutineFactory, System.Func<IEnumerator> deactivationCoroutineFactory, MonoBehaviour owner = null)
             => AddActivity(new CoroutineActivity(activationCoroutineFactory, deactivationCoroutineFactory, owner));
+        
+        public void AddActivationActivity(System.Action activationAction) => AddActivity(activationAction, null);
+        public void AddDeactivationActivity(System.Action deactivationAction) => AddActivity(null, deactivationAction);
+        public void AddActivity(System.Action activationAction, System.Action deactivationAction)
+            => AddActivity(new ActionActivity(activationAction, deactivationAction));
 
         public void AddActivity(IActivity activity)
         {
