@@ -1,3 +1,7 @@
+## [0.2.10-alpha] - [21/07/26]
+### Added Serialisable XorShift random
+* Added JSON Serialisable BeltainsTools.Maths.XSRandom class for seeded random game features.
+
 ## [0.2.9-alpha] - [13/07/26]
 ### Some more Hierarchical State Machine love
 * Added additional API for streamlined access of ancestors per state

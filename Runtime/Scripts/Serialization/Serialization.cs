@@ -28,6 +28,7 @@ namespace BeltainsTools.Serialization
         string GetID();
     }
 
+
     public static partial class FileServices
     {
         /// <summary>Service responsible for writing/reading strings to/from a location</summary>
