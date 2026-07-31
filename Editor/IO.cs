@@ -1,18 +1,17 @@
+using BeltainsTools.BTInternal;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-#if UNITY_EDITOR
+using System.Linq;
 using UnityEditor;
-#endif
+using UnityEngine;
 
-namespace BeltainsTools
+namespace BeltainsTools.Editor
 {
     public static class IO
     {
         [System.Obsolete("Not entirely supported, keeping for reference")]
         public static IEnumerable GetObjectsInProjectPathOfType(System.Type type, string path, string fileExtension, bool includeSubfolders = true)
         {
-#if UNITY_EDITOR
             // Get the generic type definition
             System.Reflection.MethodInfo method = typeof(IO).GetMethod("GetObjectsInProjectPath",
                                             System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
@@ -21,16 +20,12 @@ namespace BeltainsTools
             method = method.MakeGenericMethod(type);
             // The "null" is because it's a static method
             return (IEnumerable)method.Invoke(null, new object[] { path, fileExtension, includeSubfolders });
-#else
-            throw new System.NotSupportedException("Attempted to use GetObjectsInProjectPathOfType outside of editor environment! This is not supported!");
-#endif
         }
 
 
         /// <summary>Deletes all files in the specified directory after prompting the user for confirmation. This method is only available in the Unity Editor.</summary>
         public static void DeleteAllFilesInDirectory(string directoryPath)
         {
-#if UNITY_EDITOR
             if (!System.IO.Directory.Exists(directoryPath))
             {
                 d.LogWarning($"Directory does not exist: {directoryPath}. Deleting 0 files...");
@@ -66,7 +61,6 @@ namespace BeltainsTools
             }
 
             d.Log($"Deleted {deletedCount} files from {directoryPath}.");
-#endif
         }
 
 
@@ -74,7 +68,6 @@ namespace BeltainsTools
         /// <param name="path">Path relative to the project folder, e.g., "Assets/MyFolder/SubFolder"</param>
         public static void EnsureProjectPathExists(string path)
         {
-#if UNITY_EDITOR
             if (string.IsNullOrEmpty(path))
                 return;
 
@@ -95,18 +88,22 @@ namespace BeltainsTools
                     System.IO.Directory.CreateDirectory(nextPathOnDisk);
                 currentPath = nextPath;
             }
-#endif
         }
+
+
+        /// <inheritdoc cref="GetObjectsInProjectPath(string, string, System.Type, bool)"/>
+        public static IEnumerable<T> GetObjectsInProjectPath<T>(string path, string fileExtension, bool includeSubfolders = true) where T : Object
+            => GetObjectsInProjectPath(path, fileExtension, typeof(T), includeSubfolders).Cast<T>();
 
         /// <summary>
         /// Get a collection of objects of the given type in the given path (relative to assets/. Eg. Prefabs/... though also supports "Assets/Prefabs/..." format) found in through files of the given extension (eg. .prefab)
         /// </summary>
         /// <param name="path">The path to search within relative to the assets folder. Eg. "Prefabs" or "Assets/Prefabs"</param>
+        /// <param name="type">The type of object to search for. Eg. typeof(GameObject)</param>
         /// <param name="fileExtension">The file extensions to search through. Eg. ".asset"</param>
         /// <returns>List of assets found at the specified path with the specified file extension, or, if that directory does not exist, null</returns>
-        public static IEnumerable<T> GetObjectsInProjectPath<T>(string path, string fileExtension, bool includeSubfolders = true) where T : Object
+        public static IEnumerable<Object> GetObjectsInProjectPath(string path, string fileExtension, System.Type type, bool includeSubfolders = true)
         {
-        #if UNITY_EDITOR
             // Normalize path to be relative to Assets (strip leading "Assets/" or "Assets\\")
             string normalizedPath = path.Replace("\\", "/");
             if (normalizedPath.StartsWith("Assets/"))
@@ -124,7 +121,7 @@ namespace BeltainsTools
             System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(fullPath);
             System.IO.FileInfo[] fileInfos = directoryInfo.GetFiles($"*{fileExtension}", includeSubfolders ? System.IO.SearchOption.AllDirectories : System.IO.SearchOption.TopDirectoryOnly);
 
-            List<T> newAssetCollection = new List<T>();
+            List<Object> newAssetCollection = new List<Object>();
             for (int i = 0; i < fileInfos.Length; i++)
             {
                 string objectPath = fileInfos[i].FullName.Replace("\\", "/");
@@ -133,16 +130,56 @@ namespace BeltainsTools
                 if (assetsIndex >= 0)
                     objectPath = objectPath.Substring(assetsIndex);
 
-                T loadedObject = AssetDatabase.LoadAssetAtPath<T>(objectPath);
+                Object loadedObject = AssetDatabase.LoadAssetAtPath(objectPath, type);
                 if (loadedObject != null)
-                {
                     newAssetCollection.Add(loadedObject);
-                }
             }
             return newAssetCollection;
-        #else
-            throw new System.NotSupportedException("Attempted to use GetObjectsInProjectPath outside of editor environment! This is not supported!");
-        #endif
+        }
+
+
+        private static string GetEditorSessionDataAssetPath(string subPath)
+            => System.IO.Path.Combine(PackageData.Paths.Assets.k_Editor_SessionData, subPath);
+
+        /// <summary>Gets or creates an editor session data object of the specified type at the specified path within the editor session data folder</summary>
+        public static UnityEngine.Object GetOrCreateEditorSessionDataObject(System.Type objectType, string fileSubPathWithExt)
+        {
+            string assetPath = GetEditorSessionDataAssetPath(fileSubPathWithExt);
+
+            EnsureProjectPathExists(assetPath);
+            UnityEngine.Object loadedObject = AssetDatabase.LoadAssetAtPath(assetPath, objectType) as UnityEngine.Object;
+            if (loadedObject == null)
+                return CreateEditorSessionDataObject(objectType, fileSubPathWithExt);
+
+            return loadedObject;
+        }
+
+        /// <summary>Creates an editor session data object of the specified type at the specified path within the editor session data folder</summary>
+        public static UnityEngine.Object CreateEditorSessionDataObject(System.Type type, string fileSubPathWithExt)
+        {
+            string assetPath = GetEditorSessionDataAssetPath(fileSubPathWithExt);
+
+            DeleteEditorSessionDataObject(fileSubPathWithExt);
+
+            UnityEngine.Object instance = ScriptableObject.CreateInstance(type);
+            EnsureProjectPathExists(assetPath);
+            AssetDatabase.CreateAsset(instance, assetPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            return instance;
+        }
+
+        /// <summary>Deletes an editor session data object at the specified path within the editor session data folder</summary>
+        public static void DeleteEditorSessionDataObject(string fileSubPathWithExt)
+        {
+            string assetPath = GetEditorSessionDataAssetPath(fileSubPathWithExt);
+
+            if (!System.IO.File.Exists(assetPath))
+                return;
+            AssetDatabase.DeleteAsset(assetPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
         }
     }
 }

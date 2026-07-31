@@ -11,5 +11,9 @@ namespace BeltainsTools
         /// <inheritdoc cref="ReflectionUtilities.GetAllDescendantsOf(Assembly, Type)"/>
         public static IEnumerable<Type> GetAllDescendantsOf(this Assembly assembly, Type genericTypeDefinition)
             => ReflectionUtilities.GetAllDescendantsOf(assembly, genericTypeDefinition);
+
+        /// <inheritdoc cref="ReflectionUtilities.InvokeOnAllObjectsOrStatic(MethodInfo, object[])"/>
+        public static object[] InvokeOnAllObjectsOrStatic(this MethodInfo methodInfo, object[] parameters = null)
+            => ReflectionUtilities.InvokeOnAllObjectsOrStatic(methodInfo, parameters);
     }
 }

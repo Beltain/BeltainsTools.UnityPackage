@@ -16,5 +16,9 @@ namespace BeltainsTools
         /// <inheritdoc cref="TransformUtilities.CreateChild(Transform, string, System.Type[])"/>
         public static Transform CreateChild(this Transform transform, string objectName, params System.Type[] components)
             => TransformUtilities.CreateChild(transform, objectName, components);
+
+        /// <inheritdoc cref="TransformUtilities.GetFullHierarchyString(Transform)"/>
+        public static string GetFullHierarchyString(this Transform transform)
+            => Utilities.TransformUtilities.GetFullHierarchyString(transform);
     }
 }

@@ -30,5 +30,20 @@ namespace BeltainsTools.Utilities
             newChild.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             return newChild;
         }
+
+        /// <returns>The ancestral path of the transform in the object hierarchy. Printing all parents and itself</returns>
+        public static string GetFullHierarchyString(Transform transform)
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.Append(transform.name);
+            Transform current = transform.parent;
+            while (current != null)
+            {
+                sb.Insert(0, "/");
+                sb.Insert(0, current.name);
+                current = current.parent;
+            }
+            return sb.ToString();
+        }
     }
 }

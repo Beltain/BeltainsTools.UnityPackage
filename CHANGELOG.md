@@ -1,3 +1,10 @@
+## [0.2.11-alpha] - [31/07/26]
+### Debug Pages/Commands/Actions Update
+* Added Debug Pages (Accessible through Window > BeltainsTools > Debug Pages), an easy way to display and keep track of custom IDebugPage and [DebugPageAttribute] implementors, as well as any project object.
+* Added Debug Actions (Accessible through its Debug Page), essentially an editor/inspector version of DebugCommands. To use simply tag a public method with [DebugAction], with the possibility of having a matching validator function as well.
+* Updated DebugCommands to work on non-static functions when the implementing class is a UnityEngine.Object.
+* Finally added the ever useful .GetFullHierarchyString extension/utility method for Transforms, Components, and GameObjects.
+
 ## [0.2.10-alpha] - [21/07/26]
 ### Added Serialisable XorShift random
 * Added JSON Serialisable BeltainsTools.Maths.XSRandom class for seeded random game features.

@@ -12,5 +12,9 @@ namespace BeltainsTools
         /// <inheritdoc cref="ComponentUtilities.GetComponentInParents{T}(Component, int)"/>
         public static T GetComponentInParents<T>(this Component origin, int maxIterations = 100)
             => ComponentUtilities.GetComponentInParents<T>(origin, maxIterations);
+
+        /// <inheritdoc cref="TransformUtilities.GetFullHierarchyString(Transform)"/>
+        public static string GetFullHierarchyString(this Component component)
+            => TransformUtilities.GetFullHierarchyString(component.transform);
     }
 }
