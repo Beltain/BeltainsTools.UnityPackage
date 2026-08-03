@@ -9,17 +9,14 @@ namespace BeltainsTools.Editor
 {
     public static class IO
     {
-        [System.Obsolete("Not entirely supported, keeping for reference")]
-        public static IEnumerable GetObjectsInProjectPathOfType(System.Type type, string path, string fileExtension, bool includeSubfolders = true)
-        {
-            // Get the generic type definition
-            System.Reflection.MethodInfo method = typeof(IO).GetMethod("GetObjectsInProjectPath",
-                                            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        public static readonly string projectPath = System.IO.Directory.GetParent(Application.dataPath).FullName;
 
-            // Build a method with the specific type argument you're interested in
-            method = method.MakeGenericMethod(type);
-            // The "null" is because it's a static method
-            return (IEnumerable)method.Invoke(null, new object[] { path, fileExtension, includeSubfolders });
+        /// <returns>The full path to the specified subPath within the project folder. eg. subPath = "Assets/MyFolder/SubFolder" returns "C:/Documents/YourProject/Assets/MyFolder/SubFolder"</returns>
+        public static string GetProjectPath(string subPath)
+        {
+            if (string.IsNullOrEmpty(subPath))
+                return projectPath;
+            return System.IO.Path.Combine(projectPath, subPath);
         }
 
 
@@ -76,14 +73,12 @@ namespace BeltainsTools.Editor
             if (System.IO.Path.HasExtension(normalizedPath))
                 normalizedPath = System.IO.Path.GetDirectoryName(normalizedPath).Replace("\\", "/");
 
-            string projectRoot = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
-
             string[] folders = normalizedPath.Split('/');
             string currentPath = folders[0];
             for (int i = 1; i < folders.Length; i++)
             {
                 string nextPath = $"{currentPath}/{folders[i]}";
-                string nextPathOnDisk = System.IO.Path.Combine(projectRoot, nextPath.Replace('/', System.IO.Path.DirectorySeparatorChar));
+                string nextPathOnDisk = GetProjectPath(nextPath).Replace('/', System.IO.Path.DirectorySeparatorChar);
                 if (!System.IO.Directory.Exists(nextPathOnDisk))
                     System.IO.Directory.CreateDirectory(nextPathOnDisk);
                 currentPath = nextPath;
@@ -91,21 +86,39 @@ namespace BeltainsTools.Editor
         }
 
 
-        /// <inheritdoc cref="GetObjectsInProjectPath(string, string, System.Type, bool)"/>
-        public static IEnumerable<T> GetObjectsInProjectPath<T>(string path, string fileExtension, bool includeSubfolders = true) where T : Object
-            => GetObjectsInProjectPath(path, fileExtension, typeof(T), includeSubfolders).Cast<T>();
+
+        [System.Obsolete("Correcting naming convention. Use GetObjectsInAssetsFolder<T> instead...")]
+        /// <inheritdoc cref="GetObjectsInAssetsFolder(string, string, System.Type, bool)"/>
+        public static IEnumerable<T> GetObjectsInProjectPath<T>(string assetsPath, string fileExtension, bool includeSubfolders = true) where T : Object
+            => GetObjectsInAssetsFolder<T>(assetsPath, fileExtension, includeSubfolders);
+
+        [System.Obsolete("Correcting naming convention. Use GetObjectsInAssetsFolder instead...")]
+        /// <inheritdoc cref="GetObjectsInAssetsFolder(string, string, System.Type, bool)"/>
+        public static IEnumerable<Object> GetObjectsInProjectPath(string assetsPath, string fileExtension, System.Type type, bool includeSubfolders = true)
+            => GetObjectsInAssetsFolder(assetsPath, fileExtension, type, includeSubfolders);
+
+        /// <inheritdoc cref="GetObjectsInAssetsFolder(string, string, System.Type, bool)"/>
+        public static IEnumerable<UnityEngine.Object> GetObjectsInAssetsFolder(string assetsPath, string fileExtension, bool includeSubfolders = true)
+            => GetObjectsInAssetsFolder(assetsPath, fileExtension, typeof(UnityEngine.Object), includeSubfolders);
+
+        /// <inheritdoc cref="GetObjectsInAssetsFolder(string, string, System.Type, bool)"/>
+        public static IEnumerable<T> GetObjectsInAssetsFolder<T>(string assetsPath, string fileExtension, bool includeSubfolders = true) where T : Object
+        {
+            foreach (UnityEngine.Object obj in GetObjectsInAssetsFolder(assetsPath, fileExtension, typeof(T), includeSubfolders))
+                yield return obj as T;
+        }
 
         /// <summary>
         /// Get a collection of objects of the given type in the given path (relative to assets/. Eg. Prefabs/... though also supports "Assets/Prefabs/..." format) found in through files of the given extension (eg. .prefab)
         /// </summary>
-        /// <param name="path">The path to search within relative to the assets folder. Eg. "Prefabs" or "Assets/Prefabs"</param>
+        /// <param name="assetsPath">The path to search within relative to the assets folder. Eg. "Prefabs" or "Assets/Prefabs"</param>
         /// <param name="type">The type of object to search for. Eg. typeof(GameObject)</param>
         /// <param name="fileExtension">The file extensions to search through. Eg. ".asset"</param>
-        /// <returns>List of assets found at the specified path with the specified file extension, or, if that directory does not exist, null</returns>
-        public static IEnumerable<Object> GetObjectsInProjectPath(string path, string fileExtension, System.Type type, bool includeSubfolders = true)
+        /// <returns>All assets found at the specified path with the specified file extension, or, if that directory does not exist, null</returns>
+        public static IEnumerable<UnityEngine.Object> GetObjectsInAssetsFolder(string assetsPath, string fileExtension, System.Type type, bool includeSubfolders = true)
         {
             // Normalize path to be relative to Assets (strip leading "Assets/" or "Assets\\")
-            string normalizedPath = path.Replace("\\", "/");
+            string normalizedPath = assetsPath.Replace("\\", "/");
             if (normalizedPath.StartsWith("Assets/"))
                 normalizedPath = normalizedPath.Substring("Assets/".Length);
             else if (normalizedPath == "Assets")
@@ -116,12 +129,11 @@ namespace BeltainsTools.Editor
                 : Application.dataPath + "/" + normalizedPath;
 
             if (!System.IO.Directory.Exists(fullPath))
-                return null;
+                yield break;
 
             System.IO.DirectoryInfo directoryInfo = new System.IO.DirectoryInfo(fullPath);
             System.IO.FileInfo[] fileInfos = directoryInfo.GetFiles($"*{fileExtension}", includeSubfolders ? System.IO.SearchOption.AllDirectories : System.IO.SearchOption.TopDirectoryOnly);
 
-            List<Object> newAssetCollection = new List<Object>();
             for (int i = 0; i < fileInfos.Length; i++)
             {
                 string objectPath = fileInfos[i].FullName.Replace("\\", "/");
@@ -130,16 +142,16 @@ namespace BeltainsTools.Editor
                 if (assetsIndex >= 0)
                     objectPath = objectPath.Substring(assetsIndex);
 
-                Object loadedObject = AssetDatabase.LoadAssetAtPath(objectPath, type);
+                UnityEngine.Object loadedObject = AssetDatabase.LoadAssetAtPath(objectPath, type);
                 if (loadedObject != null)
-                    newAssetCollection.Add(loadedObject);
+                    yield return loadedObject;
             }
-            return newAssetCollection;
         }
 
 
-        private static string GetEditorSessionDataAssetPath(string subPath)
-            => System.IO.Path.Combine(PackageData.Paths.Assets.k_Editor_SessionData, subPath);
+        /// <inheritdoc cref="GetOrCreateEditorSessionDataObject(System.Type, string)"/>
+        public static T GetOrCreateEditorSessionDataObject<T>(string fileSubPathWithExt) where T : UnityEngine.Object
+            => GetOrCreateEditorSessionDataObject(typeof(T), fileSubPathWithExt) as T;
 
         /// <summary>Gets or creates an editor session data object of the specified type at the specified path within the editor session data folder</summary>
         public static UnityEngine.Object GetOrCreateEditorSessionDataObject(System.Type objectType, string fileSubPathWithExt)
@@ -153,6 +165,10 @@ namespace BeltainsTools.Editor
 
             return loadedObject;
         }
+
+        /// <inheritdoc cref="CreateEditorSessionDataObject(System.Type, string)"/>
+        public static T CreateEditorSessionDataObject<T>(string fileSubPathWithExt) where T : UnityEngine.Object
+            => CreateEditorSessionDataObject(typeof(T), fileSubPathWithExt) as T;
 
         /// <summary>Creates an editor session data object of the specified type at the specified path within the editor session data folder</summary>
         public static UnityEngine.Object CreateEditorSessionDataObject(System.Type type, string fileSubPathWithExt)
@@ -181,5 +197,8 @@ namespace BeltainsTools.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
+
+        private static string GetEditorSessionDataAssetPath(string subPath)
+            => System.IO.Path.Combine(PackageData.Paths.Assets.k_Editor_SessionData, subPath);
     }
 }
