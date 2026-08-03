@@ -73,12 +73,6 @@ namespace BeltainsTools.Editor.Debugging.DebugActions
             m_ParamGroupStyle = paramStyle;
         }
 
-        [DebugAction]
-        public static void Test(float egg, int legg)
-        {
-
-        }
-
         public void OnGUI()
         {
             InitialiseStyles();
