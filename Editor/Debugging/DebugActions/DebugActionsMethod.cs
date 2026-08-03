@@ -8,16 +8,18 @@ namespace BeltainsTools.Editor.Debugging.DebugActions
 {
     public class DebugActionsMethod
     {
-        private const float k_TitlePadding = 50f;
+        private const float k_MethodGroupHeight = 22f;
 
         private readonly DebugActionAttribute m_Attribute;
         private readonly MethodInfo m_MethodInfo;
         private readonly MethodInfo m_ValidatorMethodInfo;
         private readonly DebugActionParam[] m_Parameters;
 
-        private GUIStyle m_MethodStyle;
-        private GUIStyle m_MethodFontStyle;
-        private GUIStyle m_ParamStyle;
+        private bool m_StylesInitialised;
+        private GUIStyle m_MethodGroupStyle;
+        private GUIStyle m_MethodButtonStyle;
+        private GUIStyle m_MethodSubtextStyle;
+        private GUIStyle m_ParamGroupStyle;
 
         public DebugActionsMethod(MethodInfo methodInfo, DebugActionAttribute attribute, MethodInfo validatorMethodInfo)
         {
@@ -32,31 +34,49 @@ namespace BeltainsTools.Editor.Debugging.DebugActions
 
         private void InitialiseStyles()
         {
-            if (m_MethodStyle == null)
-            {
-                GUIStyle methodStyle = new GUIStyle(EditorStyles.helpBox);
-                methodStyle.alignment = TextAnchor.MiddleLeft;
-                methodStyle.margin = new RectOffset(0, 0, 0, 0);
-                methodStyle.border = new RectOffset(0, 0, 0, 0);
-                methodStyle.padding = new RectOffset(2, 2, 2, 2);
-                m_MethodStyle = methodStyle;
-            }
+            if (m_StylesInitialised) 
+                return;
+            m_StylesInitialised = true;
 
-            if (m_MethodFontStyle == null)
-            {
-                GUIStyle methodFontStyle = new GUIStyle(EditorStyles.boldLabel);
-                methodFontStyle.alignment = TextAnchor.MiddleCenter;
-                m_MethodFontStyle = methodFontStyle;
-            }
+            GUIStyle methodGroupStyle = new GUIStyle(EditorStyles.helpBox);
+            methodGroupStyle.alignment = TextAnchor.MiddleLeft;
+            methodGroupStyle.margin = new RectOffset(0, 0, 0, 0);
+            methodGroupStyle.border = new RectOffset(0, 0, 0, 0);
+            methodGroupStyle.padding = new RectOffset(2, 2, 2, 2);
+            m_MethodGroupStyle = methodGroupStyle;
 
-            if (m_ParamStyle == null)
-            {
-                GUIStyle paramStyle = new GUIStyle(EditorStyles.helpBox);
-                paramStyle.margin = new RectOffset(2, 2, 0, 0);
-                paramStyle.border = new RectOffset(0, 0, 0, 0);
-                paramStyle.padding = new RectOffset(2, 2, 0, 0);
-                m_ParamStyle = paramStyle;
-            }
+            GUIStyle methodButtonStyle = new GUIStyle(EditorStyles.miniButton);
+            methodButtonStyle.alignment = TextAnchor.MiddleCenter;
+            methodButtonStyle.font = EditorStyles.boldLabel.font;
+            methodButtonStyle.padding = new RectOffset(12, 12, 0, 0);
+            methodButtonStyle.margin = new RectOffset(0, 20, 0, 0);
+            methodButtonStyle.fixedHeight = k_MethodGroupHeight;
+            methodButtonStyle.stretchWidth = false;
+            m_MethodButtonStyle = methodButtonStyle;
+
+            GUIStyle methodSubtextStyle = new GUIStyle(EditorStyles.miniLabel);
+            methodSubtextStyle.alignment = TextAnchor.MiddleCenter;
+            methodSubtextStyle.fontStyle = FontStyle.Italic;
+            methodSubtextStyle.normal.textColor = EditorGUIUtility.isProSkin 
+                ? new Color(0.5f, 0.5f, 0.5f) 
+                : new Color(0.4f, 0.4f, 0.4f);
+            methodSubtextStyle.padding = new RectOffset(12, 12, 0, 0);
+            methodSubtextStyle.margin = new RectOffset(20, 0, 0, 0);
+            methodSubtextStyle.fixedHeight = k_MethodGroupHeight;
+            methodSubtextStyle.stretchWidth = false;
+            m_MethodSubtextStyle = methodSubtextStyle;
+
+            GUIStyle paramStyle = new GUIStyle(EditorStyles.helpBox);
+            paramStyle.margin = new RectOffset(4, 4, 0, 0);
+            paramStyle.border = new RectOffset(0, 0, 0, 0);
+            paramStyle.padding = new RectOffset(2, 2, 0, 0);
+            m_ParamGroupStyle = paramStyle;
+        }
+
+        [DebugAction]
+        public static void Test(float egg, int legg)
+        {
+
         }
 
         public void OnGUI()
@@ -65,23 +85,26 @@ namespace BeltainsTools.Editor.Debugging.DebugActions
             bool cachedWideMode = EditorGUIUtility.wideMode;
             EditorGUIUtility.wideMode = true;
 
-            Rect horizontalRect = EditorGUILayout.BeginHorizontal(m_MethodStyle, GUILayout.ExpandWidth(false));
+            Rect horizontalRect = EditorGUILayout.BeginHorizontal(m_MethodGroupStyle, GUILayout.Height(k_MethodGroupHeight), GUILayout.ExpandHeight(false), GUILayout.ExpandWidth(false));
 
             EditorGUI.BeginDisabledGroup(!Validate());
-            if (GUILayout.Button("Execute", GUILayout.Width(100)))
+            GUIContent methodButtonContent = new GUIContent(m_Attribute.GetName(m_MethodInfo));
+            float methodButtonWidth = m_MethodButtonStyle.CalcSize(methodButtonContent).x;
+            if (GUILayout.Button(methodButtonContent, m_MethodButtonStyle, GUILayout.Width(methodButtonWidth)))
                 Execute();
             EditorGUI.EndDisabledGroup();
 
-            GUIContent methodTitleContent = new GUIContent(m_Attribute.GetName(m_MethodInfo) + "()");
-            float methodTitleWidth = m_MethodStyle.CalcSize(methodTitleContent).x * 1.25f + k_TitlePadding;
-            EditorGUILayout.LabelField(methodTitleContent, m_MethodFontStyle, GUILayout.Width(methodTitleWidth), GUILayout.ExpandWidth(false));
-
             foreach (DebugActionParam param in m_Parameters)
             {
-                EditorGUILayout.BeginHorizontal(m_ParamStyle);
-                param.OnGUI(m_ParamStyle);
+                EditorGUILayout.BeginHorizontal(m_ParamGroupStyle, GUILayout.Width(param.GetGUIWidth()), GUILayout.ExpandWidth(false));
+                param.OnGUI();
                 EditorGUILayout.EndHorizontal();
             }
+
+            GUIContent methodSubtextContent = new GUIContent($"{m_MethodInfo.DeclaringType}.{m_MethodInfo.Name}({(m_Parameters.Length > 0 ? "..." : "")})");
+            float methodSubtextWidth = m_MethodSubtextStyle.CalcSize(methodSubtextContent).x;
+            EditorGUILayout.LabelField(methodSubtextContent, m_MethodSubtextStyle, GUILayout.Width(methodSubtextWidth));
+
             EditorGUILayout.EndHorizontal();
 
             EditorGUIUtility.wideMode = cachedWideMode;

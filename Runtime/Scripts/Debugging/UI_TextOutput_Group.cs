@@ -30,8 +30,10 @@ namespace BeltainsTools.Debugging
 
         public void RemoveEntry(UI_TextOutput_Element entry)
         {
-            m_Entries.Remove(entry);
-            entry.transform.SetParent(null, false);
+            if (!m_Entries.Remove(entry))
+                return;
+            if (entry.transform.parent == m_EntriesRect)
+                entry.transform.SetParent(null, false);
             entry.RecycledEvent.Unsubscribe(OnEntryRecycled);
         }
 

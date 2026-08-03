@@ -1,3 +1,8 @@
+## [0.2.12-alpha] - [03/08/26]
+### NoteAttribute IN + Improvements & Fixes
+* Improvements to Debug Actions Debug Page
+* Fixed strange offset with DebugCommands autocomplete box
+
 ## [0.2.11-alpha] - [31/07/26]
 ### Debug Pages/Commands/Actions Update
 * Added Debug Pages (Accessible through Window > BeltainsTools > Debug Pages), an easy way to display and keep track of custom IDebugPage and [DebugPageAttribute] implementors, as well as any project object.

@@ -12,20 +12,17 @@ namespace BeltainsTools.Debugging
         [SerializeField] protected UI_TextOutput_Element m_TextElementPrefab;
         [SerializeField] protected UI_LineGraphOutput_Element m_LineGraphElementPrefab;
 
-        RectTransform m_RectTransform;
+        private RectTransform m_RectTransform;
 
-        Pool<UI_TextOutput_Group> m_TextGroupPool;
-        Pool<UI_TextOutput_Element> m_TextElementPool;
-        Pool<UI_LineGraphOutput_Element> m_LineGraphElementPool;
+        private Pool<UI_TextOutput_Group> m_TextGroupPool;
+        private Pool<UI_TextOutput_Element> m_TextElementPool;
+        private Pool<UI_LineGraphOutput_Element> m_LineGraphElementPool;
 
-        Dictionary<string, UI_TextOutput_Group> m_TextGroups = new Dictionary<string, UI_TextOutput_Group>();
+        private Dictionary<string, UI_TextOutput_Group> m_TextGroups = new Dictionary<string, UI_TextOutput_Group>();
 
-        void SetTelemetry(IEnumerable<d.TelemetryMessage> telemetryMessages)
+        private void SetTelemetry(IEnumerable<d.TelemetryMessage> telemetryMessages)
         {
-            m_TextElementPool.RecycleAllPooledObjects();
-            m_TextGroupPool.RecycleAllPooledObjects();
-            m_TextGroups.Clear();
-            m_LineGraphElementPool.RecycleAllPooledObjects();
+            ClearAllEntries();
 
             foreach (d.TelemetryMessage message in telemetryMessages)
             {
@@ -58,6 +55,13 @@ namespace BeltainsTools.Debugging
             LayoutRebuilder.ForceRebuildLayoutImmediate(m_RectTransform);
         }
 
+        private void ClearAllEntries()
+        {
+            m_TextElementPool.RecycleAllPooledObjects();
+            m_TextGroupPool.RecycleAllPooledObjects();
+            m_TextGroups.Clear();
+            m_LineGraphElementPool.RecycleAllPooledObjects();
+        }
 
 
         private void OnPool()
@@ -77,6 +81,7 @@ namespace BeltainsTools.Debugging
 
         private void OnRecycle()
         {
+            ClearAllEntries();
             d.TelemetryMessagesUpdatedEvent.Unsubscribe(SetTelemetry);
         }
     }

@@ -22,6 +22,7 @@ namespace BeltainsTools.Utilities
             return resultBounds;
         }
 
+        /// <returns>The first component of the matching type found in the parent hierarchy (including the origin), or null if none is found</returns>
         public static T GetComponentInParents<T>(Component origin, int maxIterations = 100)
         {
             T result;

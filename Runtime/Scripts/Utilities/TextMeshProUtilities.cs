@@ -10,7 +10,7 @@ namespace BeltainsTools.Utilities
         public static Vector3 GetCharacterPosition(TMPro.TMP_Text textElement, int index)
         {
             TMPro.TMP_TextInfo textInfo = textElement.GetTextInfo(textElement.text);
-            return textElement.transform.position + textInfo.characterInfo[index].bottomLeft;
+            return textElement.transform.TransformPoint(textInfo.characterInfo[index].bottomLeft);
         }
     }
 }

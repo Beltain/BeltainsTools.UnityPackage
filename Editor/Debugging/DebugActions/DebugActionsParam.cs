@@ -7,18 +7,36 @@ namespace BeltainsTools.Editor.Debugging.DebugActions
     {
         public string Title { get; private set; }
 
+        private GUILayoutOption[] m_ControlLayoutOptions;
+
         protected DebugActionParam(string title)
         {
             Title = title;
         }
 
+        protected GUILayoutOption[] GetControlLayoutOptions()
+        {
+            if (m_ControlLayoutOptions == null)
+            {
+                m_ControlLayoutOptions = new GUILayoutOption[]
+                {
+                    GUILayout.Width(GetControlWidth()),
+                    GUILayout.ExpandWidth(false)
+                };
+            }
+
+            return m_ControlLayoutOptions;
+        }
+
         public abstract object GetValue();
 
-        public virtual void OnGUI(GUIStyle style)
+        public float GetGUIWidth() => GetLabelWidth() + GetControlWidth();
+        private float GetLabelWidth() => EditorStyles.label.CalcSize(new GUIContent(Title)).x;
+        protected abstract float GetControlWidth();
+
+        public virtual void OnGUI()
         {
-            GUIContent titleContent = new GUIContent(Title);
-            float size = style.CalcSize(titleContent).x * 1.25f;
-            EditorGUILayout.LabelField(Title, GUILayout.MaxWidth(size), GUILayout.ExpandWidth(false));
+            EditorGUILayout.LabelField(Title, GUILayout.Width(GetLabelWidth()), GUILayout.ExpandWidth(false));
         }
 
         public static bool ValidateMethod(System.Reflection.MethodInfo methodInfo, DebugActionAttribute attribute)
@@ -137,21 +155,26 @@ namespace BeltainsTools.Editor.Debugging.DebugActions
     {
         public DebugActionParam_Bool(string title) : base(title) { }
         public DebugActionParam_Bool(string title, object value) : base(title, value) { }
-        public override void OnGUI(GUIStyle style)
+
+        protected override float GetControlWidth() => 15;
+        public override void OnGUI()
         {
-            base.OnGUI(style);
-            Value = UnityEditor.EditorGUILayout.Toggle(string.Empty, Value, GUILayout.Width(15), GUILayout.ExpandWidth(false));
+            base.OnGUI();
+            Value = UnityEditor.EditorGUILayout.Toggle(string.Empty, Value, GetControlLayoutOptions());
         }
+
     }
 
     public class DebugActionParam_Int : DebugActionParam<int>
     {
         public DebugActionParam_Int(string title) : base(title) { }
         public DebugActionParam_Int(string title, object value) : base(title, value) { }
-        public override void OnGUI(GUIStyle style)
+
+        protected override float GetControlWidth() => 50;
+        public override void OnGUI()
         {
-            base.OnGUI(style);
-            Value = EditorGUILayout.IntField(string.Empty, Value, GUILayout.Width(50), GUILayout.ExpandWidth(false));
+            base.OnGUI();
+            Value = EditorGUILayout.IntField(string.Empty, Value, GetControlLayoutOptions());
         }
     }
 
@@ -159,10 +182,12 @@ namespace BeltainsTools.Editor.Debugging.DebugActions
     {
         public DebugActionParam_Float(string title) : base(title) { }
         public DebugActionParam_Float(string title, object value) : base(title, value) { }
-        public override void OnGUI(GUIStyle style)
+
+        protected override float GetControlWidth() => 50;
+        public override void OnGUI()
         {
-            base.OnGUI(style);
-            Value = EditorGUILayout.FloatField(string.Empty, Value, GUILayout.Width(50), GUILayout.ExpandWidth(false));
+            base.OnGUI();
+            Value = EditorGUILayout.FloatField(string.Empty, Value, GetControlLayoutOptions());
         }
     }
 
@@ -170,10 +195,12 @@ namespace BeltainsTools.Editor.Debugging.DebugActions
     {
         public DebugActionParam_String(string title) : base(title) { }
         public DebugActionParam_String(string title, object value) : base(title, value) { }
-        public override void OnGUI(GUIStyle style)
+
+        protected override float GetControlWidth() => 150;
+        public override void OnGUI()
         {
-            base.OnGUI(style);
-            Value = UnityEditor.EditorGUILayout.TextField(string.Empty, Value, GUILayout.Width(150), GUILayout.ExpandWidth(false));
+            base.OnGUI();
+            Value = UnityEditor.EditorGUILayout.TextField(string.Empty, Value, GetControlLayoutOptions());
         }
     }
 
@@ -181,10 +208,12 @@ namespace BeltainsTools.Editor.Debugging.DebugActions
     {
         public DebugActionParam_Vector2(string title) : base(title) { }
         public DebugActionParam_Vector2(string title, object value) : base(title, value) { }
-        public override void OnGUI(GUIStyle style)
+
+        protected override float GetControlWidth() => 100;
+        public override void OnGUI()
         {
-            base.OnGUI(style);
-            Value = EditorGUILayout.Vector2Field(string.Empty, Value, GUILayout.Width(100), GUILayout.ExpandWidth(false));
+            base.OnGUI();
+            Value = EditorGUILayout.Vector2Field(string.Empty, Value, GetControlLayoutOptions());
         }
     }
 
@@ -192,10 +221,12 @@ namespace BeltainsTools.Editor.Debugging.DebugActions
     {
         public DebugActionParam_Vector3(string title) : base(title) { }
         public DebugActionParam_Vector3(string title, object value) : base(title, value) { }
-        public override void OnGUI(GUIStyle style)
+
+        protected override float GetControlWidth() => 150;
+        public override void OnGUI()
         {
-            base.OnGUI(style);
-            Value = EditorGUILayout.Vector3Field(string.Empty, Value, GUILayout.Width(150), GUILayout.ExpandWidth(false));
+            base.OnGUI();
+            Value = EditorGUILayout.Vector3Field(string.Empty, Value, GetControlLayoutOptions());
         }
     }
 
@@ -214,10 +245,11 @@ namespace BeltainsTools.Editor.Debugging.DebugActions
             m_EnumType = value.GetType();
         }
 
-        public override void OnGUI(GUIStyle style)
+        protected override float GetControlWidth() => 120;
+        public override void OnGUI()
         {
-            base.OnGUI(style);
-            Value = EditorGUILayout.EnumPopup(string.Empty, Value, GUILayout.Width(120), GUILayout.ExpandWidth(false));
+            base.OnGUI();
+            Value = EditorGUILayout.EnumPopup(string.Empty, Value, GetControlLayoutOptions());
         }
     }
 }

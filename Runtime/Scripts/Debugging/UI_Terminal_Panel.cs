@@ -24,7 +24,7 @@ namespace BeltainsTools.Debugging
 
         static UI_Terminal_Panel s_ActiveInstance;
 
-
+        Canvas m_Canvas;
 
         TMP_InputField m_InputField;
 
@@ -410,7 +410,15 @@ namespace BeltainsTools.Debugging
 
             //Move autofill box to the location of the last cur text token.
             int anchorCharIndex = Mathf.Clamp(m_CurText.Length - m_CurTextTokens.Last().Length, 0, m_CurText.Length - 1);
-            m_AutofillSuggestionsBox.position = new Vector3(m_InputField.GetCharacterPosition(anchorCharIndex).x, m_AutofillSuggestionsBox.position.y, m_AutofillSuggestionsBox.position.z);
+
+            Vector3 anchorScreenCharPos = m_InputField.GetCharacterPosition(anchorCharIndex); // says world pos, is actually screen pos when dealing with UGUI
+
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                m_AutofillSuggestionsBox.parent as RectTransform,
+                anchorScreenCharPos,
+                m_Canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : m_Canvas.worldCamera,
+                out Vector2 anchorCharLocalPos);
+            m_AutofillSuggestionsBox.localPosition = m_AutofillSuggestionsBox.localPosition.SetX(anchorCharLocalPos.x);
         }
 
 
@@ -491,6 +499,8 @@ namespace BeltainsTools.Debugging
 
             m_InputField.caretColor = m_HighlightColor;
             m_InputField.selectionColor = m_HighlightColor;
+
+            m_Canvas = gameObject.GetComponentInParents<Canvas>().rootCanvas;
         }
 
         void OnSpawn()
