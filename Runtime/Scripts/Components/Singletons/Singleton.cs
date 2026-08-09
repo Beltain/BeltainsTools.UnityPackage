@@ -41,7 +41,8 @@ namespace BeltainsTools
         {
             base.Awake();
 
-            DontDestroyOnLoad(this.gameObject);
+            if (transform.parent == null)
+                DontDestroyOnLoad(this.gameObject);
         }
     }
 }
