@@ -76,6 +76,14 @@ namespace BeltainsTools.Logic
         }
         #endregion
 
+        public void SetEnable(bool set, ref Token token, System.Action<Token> onRemovedCallback)
+        {
+            if (set && token == null)
+                token = Enable(onRemovedCallback);
+            else if (!set && token != null)
+                token.Dispose();
+        }
+
         /// <summary>Sets an enable flag</summary>
         /// <returns>A token for removing the flag</returns>
         public Token Enable(System.Action<Token> onRemovedCallback)
@@ -89,6 +97,14 @@ namespace BeltainsTools.Logic
             if (m_EnableTokens.Add(token))
                 RefreshEnabled();
             return token;
+        }
+
+        public void SetDisable(bool set, ref Token token, System.Action<Token> onRemovedCallback)
+        {
+            if (set && token == null)
+                token = Disable(onRemovedCallback);
+            else if (!set && token != null)
+                token.Dispose();
         }
 
         /// <summary>Sets a disable flag</summary>
