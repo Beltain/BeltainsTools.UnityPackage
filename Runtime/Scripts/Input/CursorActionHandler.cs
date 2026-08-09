@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using BeltainsTools.EventHandling;
 
-namespace BeltainsTools.InputUtils
+namespace BeltainsTools.Input
 {
     [System.Serializable]
     public class CursorActionHandler : System.IDisposable
