@@ -7,7 +7,8 @@
   "dependencies": {
     "com.mackysoft.serializereference-extensions": "https://github.com/mackysoft/Unity-SerializeReferenceExtensions.git?path=Assets/MackySoft/MackySoft.SerializeReferenceExtensions",
     "com.unity.nuget.newtonsoft-json": "3.2.1",
-    "com.unity.ai.navigation": "2.0.5"
+    "com.unity.ai.navigation": "2.0.5",
+    "com.unity.cinemachine": "3.1.7"
  },
   "author": {
     "name": "Beltain Jordaan",
