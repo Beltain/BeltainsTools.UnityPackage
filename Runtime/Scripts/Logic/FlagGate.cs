@@ -1,4 +1,5 @@
 using BeltainsTools.EventHandling;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -24,17 +25,18 @@ namespace BeltainsTools.Logic
 
         public class Token : System.IDisposable
         {
-            private readonly System.Action<Token> OnRemovedCallback;
+            public BEvent<Token> DisposedEvent;
 
             public Token(System.Action<Token> onRemovedCallback)
             {
-                OnRemovedCallback = onRemovedCallback;
+                if (onRemovedCallback != null)
+                    DisposedEvent.Subscribe(onRemovedCallback);
             }
 
             public void Remove() => Dispose();
             public void Dispose()
             {
-                OnRemovedCallback.Invoke(this);
+                DisposedEvent.Invoke(this);
             }
         }
 
@@ -48,7 +50,7 @@ namespace BeltainsTools.Logic
             IsEnabled = GetEnabled();
         }
 
-        public void Dispose()
+        void IDisposable.Dispose()
         {
             m_SuppressEvents = true;
             for (int i = m_EnableTokens.Count - 1; i >= 0; i--)
@@ -88,15 +90,14 @@ namespace BeltainsTools.Logic
         /// <returns>A token for removing the flag</returns>
         public Token Enable(System.Action<Token> onRemovedCallback)
         {
-            Token token = new Token((removedToken) =>
-            {
-                if (m_EnableTokens.Remove(removedToken))
-                    RefreshEnabled();
-                onRemovedCallback?.Invoke(removedToken);
-            });
-            if (m_EnableTokens.Add(token))
-                RefreshEnabled();
-            return token;
+            return CreateAndAddTokenToSet(m_EnableTokens, onRemovedCallback);
+        }
+
+        /// <summary>Adds existing token to our enable flags</summary>
+        public void Enable(Token token)
+        {
+            d.Assert(token != null, "Cannot enable with a null token!");
+            AddTokenToSet(token, m_EnableTokens);
         }
 
         public void SetDisable(bool set, ref Token token, System.Action<Token> onRemovedCallback)
@@ -111,16 +112,35 @@ namespace BeltainsTools.Logic
         /// <returns>A token for removing the flag</returns>
         public Token Disable(System.Action<Token> onRemovedCallback)
         {
-            Token token = new Token((removedToken) =>
-            {
-                if (m_DisableTokens.Remove(removedToken))
-                    RefreshEnabled();
-                onRemovedCallback?.Invoke(removedToken);
-            });
-            if (m_DisableTokens.Add(token))
-                RefreshEnabled();
+            return CreateAndAddTokenToSet(m_DisableTokens, onRemovedCallback);
+        }
+
+        /// <summary>Adds existing token to our disable flags</summary>
+        public void Disable(Token token)
+        {
+            d.Assert(token != null, "Cannot disable with a null token!");
+            AddTokenToSet(token, m_DisableTokens);
+        }
+
+
+        private Token CreateAndAddTokenToSet(HashSet<Token> tokenSet, System.Action<Token> onRemovedCallback)
+        {
+            Token token = new Token(onRemovedCallback);
+            AddTokenToSet(token, tokenSet);
             return token;
         }
+
+        private void AddTokenToSet(Token token, HashSet<Token> tokenSet)
+        {
+            if (tokenSet.Add(token))
+                RefreshEnabled();
+            token.DisposedEvent.Subscribe(t => 
+            { 
+                if (tokenSet.Remove(t))
+                    RefreshEnabled();
+            });
+        }
+
 
         private bool GetEnabled()
         {
