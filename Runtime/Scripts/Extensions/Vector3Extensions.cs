@@ -1,3 +1,4 @@
+using BeltainsTools.Maths;
 using UnityEngine;
 
 namespace BeltainsTools
@@ -22,6 +23,10 @@ namespace BeltainsTools
         public static bool IsNegativeInfinity(this Vector3 vector) => vector.x.IsNegativeInfinity() || vector.y.IsNegativeInfinity() || vector.z.IsNegativeInfinity();
         public static bool IsPositiveInfinity(this Vector3 vector) => vector.x.IsPositiveInfinity() || vector.y.IsPositiveInfinity() || vector.z.IsPositiveInfinity();
         public static bool IsInfinity(this Vector3 vector) => vector.x.IsInfinity() || vector.y.IsInfinity() || vector.z.IsInfinity();
+
+        /// <inheritdoc cref="Vector3Operations.SetComponent(Vector3, Vector3, float)"/>
+        public static Vector3 SetComponent(this Vector3 inVector, Vector3 componentDirection, float componentMagnitude)
+            => Vector3Operations.SetComponent(inVector, componentDirection, componentMagnitude);
 
         /// <summary>Translate this vector so that it's relative to the camera forward</summary>
         public static Vector3 RelativeToCameraGroundForward(this Vector3 vector, Camera cam = null)

@@ -108,11 +108,11 @@ namespace BeltainsTools.UI
 
                     // Try find the intersection of the two lines, if they intersect in both directions, then we have a valid corner line pole.
                     // if we find it in the second direction, it means our line is a stub of 0 length and should be treated as a single point.
-                    if (MathB.GetDirectionsIntersection(startPoint, startDirection, endPoint, endDirection, out PolePt, ensureCrossesInDirection: true))
+                    if (MathB.GetDirectionsIntersect(startPoint, startDirection, endPoint, endDirection, out PolePt, ensureCrossesInDirection: true))
                     {
                         IsStub = false;
                     }
-                    else if (MathB.GetDirectionsIntersection(startPoint, -startDirection, endPoint, -endDirection, out PolePt, ensureCrossesInDirection: true))
+                    else if (MathB.GetDirectionsIntersect(startPoint, -startDirection, endPoint, -endDirection, out PolePt, ensureCrossesInDirection: true))
                     {
                         IsStub = true;
                         PolePt = (StartPt + EndPt) * 0.5f; // pole is mid point

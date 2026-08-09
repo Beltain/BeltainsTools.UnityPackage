@@ -320,5 +320,34 @@ namespace BeltainsTools.Editor
 
             return canvas;
         }
+
+
+
+
+        public static IEnumerable<T> GetAssetsOfTypeInProject<T>() where T : Object => GetAssetsOfTypeInProjectPaths<T>(projectPaths: null);
+        /// <inheritdoc cref="GetAssetsOfTypeInProjectPaths(System.Type, string[])"/>
+        public static IEnumerable<T> GetAssetsOfTypeInProjectPaths<T>(params string[] projectPaths) where T : Object
+            => GetAssetsOfTypeInProjectPaths(typeof(T), projectPaths).Cast<T>();
+        /// <returns>Assets of <paramref name="type"/> in all the specified <paramref name="projectPaths"/></returns>
+        public static IEnumerable<object> GetAssetsOfTypeInProjectPaths(System.Type type, params string[] projectPaths)
+        {
+            bool isComponent = type.IsSubclassOf(typeof(Component));
+            string[] assetGUIDs = isComponent ?
+                    UnityEditor.AssetDatabase.FindAssets($"t:GameObject", projectPaths) :
+                    UnityEditor.AssetDatabase.FindAssets($"t:{type.Name}", projectPaths);
+            foreach (string assetGUID in assetGUIDs)
+            {
+                string assetPath = UnityEditor.AssetDatabase.GUIDToAssetPath(assetGUID);
+                UnityEngine.Object assetObject = UnityEditor.AssetDatabase.LoadAssetAtPath(assetPath, isComponent ? typeof(GameObject) : type);
+                if (assetObject == null)
+                    continue;
+
+                object asset = isComponent ? ((GameObject)assetObject).GetComponent(type) : assetObject;
+                if (asset == null)
+                    continue;
+
+                yield return asset;
+            }
+        }
     }
 }

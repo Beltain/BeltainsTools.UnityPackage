@@ -1,10 +1,11 @@
 {
   "name": "com.beltainjordaan.beltainstools",
-  "version": "0.2.12-alpha",
+  "version": "0.3.0-alpha",
   "displayName": "BeltainsTools",
   "description": "A collection of helpful Unity tools, utilities, and extensions for a more enjoyable game dev experience.",
   "unity": "6000.5",
   "dependencies": {
+    "com.mackysoft.serializereference-extensions": "https://github.com/mackysoft/Unity-SerializeReferenceExtensions.git?path=Assets/MackySoft/MackySoft.SerializeReferenceExtensions",
     "com.unity.nuget.newtonsoft-json": "3.2.1",
     "com.unity.ai.navigation": "2.0.5"
  },
