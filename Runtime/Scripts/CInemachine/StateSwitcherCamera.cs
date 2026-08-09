@@ -10,7 +10,7 @@ namespace BeltainsTools.Cinemachine
     [DisallowMultipleComponent]
     [ExecuteAlways]
     [ExcludeFromPreset]
-    [AddComponentMenu("Blink/Cinemachine/StateSwitcherCamera")]
+    [AddComponentMenu("BeltainsTools/Cinemachine/StateSwitcherCamera")]
     public class StateSwitcherCamera : CinemachineCameraManagerBase
     {
         [System.Serializable]

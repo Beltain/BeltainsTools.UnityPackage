@@ -7,7 +7,7 @@ namespace BeltainsTools
     /// Displays a permanent help box in the Unity Inspector.
     /// Can be applied to <see cref="UnityEngine.Object"/> or fields.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field, AllowMultiple = true, Inherited = true)]
+    [AttributeUsage(/*AttributeTargets.Class |*/ AttributeTargets.Field, AllowMultiple = true, Inherited = true)]
     public class NoteAttribute : PropertyAttribute
     {
         public string Message { get; }
@@ -21,6 +21,14 @@ namespace BeltainsTools
             NoteAttribute.MessageTypes.Warning => UnityEditor.MessageType.Warning,
             NoteAttribute.MessageTypes.Severe => UnityEditor.MessageType.Error,
             _ => UnityEditor.MessageType.None
+        };
+
+        public UnityEngine.UIElements.HelpBoxMessageType EditorUIElementsMessageType => MessageType switch
+        {
+            NoteAttribute.MessageTypes.Normal => UnityEngine.UIElements.HelpBoxMessageType.Info,
+            NoteAttribute.MessageTypes.Warning => UnityEngine.UIElements.HelpBoxMessageType.Warning,
+            NoteAttribute.MessageTypes.Severe => UnityEngine.UIElements.HelpBoxMessageType.Error,
+            _ => UnityEngine.UIElements.HelpBoxMessageType.None
         };
 #endif
 
