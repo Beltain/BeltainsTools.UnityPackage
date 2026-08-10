@@ -18,15 +18,16 @@ namespace BeltainsTools.Board
     public partial class Board : Singleton<Board>
     {
         [SerializeField]
-        private Config m_Config;
+        private Config m_Config = new Config();
         [SerializeField]
         private Vector3 m_CellCameraFocusOffset = Vector3.up * 0.5f;
 
         [SerializeField, HideInInspector]
         private Grid m_Grid;
+        [SerializeField, HideInInspector]
+        private CinemachineTargetGroup m_CinemachineTargeter;
 
         private Transform m_CellContainer;
-        private CinemachineTargetGroup m_CinemachineTargeter;
 
         private CellPositioningData m_BuiltCellPositioning;
         private Config m_BuiltConfig = new Config();
@@ -243,7 +244,6 @@ namespace BeltainsTools.Board
             if (m_CinemachineTargeter == null)
             {
                 m_CinemachineTargeter = new GameObject("_CinemachineTargeter").AddComponent<CinemachineTargetGroup>();
-                m_CinemachineTargeter.gameObject.hideFlags = HideFlags.DontSave;
                 m_CinemachineTargeter.transform.SetParent(transform);
                 m_CinemachineTargeter.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             }
@@ -266,6 +266,11 @@ namespace BeltainsTools.Board
             BuildConfig(m_Config);
         }
 
+        private void OnEnable()
+        {
+            CinemachineTargeter.Targets.RemoveAll(t => t.Object == null); // clear nulls left by non-saved cells
+        }
+
         private void Update()
         {
             CellPositioningData cellPositioning = new CellPositioningData(Grid, m_CellCameraFocusOffset);
@@ -277,11 +282,6 @@ namespace BeltainsTools.Board
 
             if (!m_BuiltConfig.Equals(m_Config))
                 BuildConfig(m_Config);
-        }
-
-        private void OnDisable()
-        {
-            RemoveAllCells();
         }
 
         protected override void OnDestroy()
