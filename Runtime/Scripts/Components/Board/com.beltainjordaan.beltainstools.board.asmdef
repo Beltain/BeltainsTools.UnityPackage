@@ -1,9 +1,10 @@
 {
-    "name": "com.beltainjordaan.beltainstools.cinemachine",
-    "rootNamespace": "BeltainsTools.Cinemachine",
+    "name": "com.beltainjordaan.beltainstools.board",
+    "rootNamespace": "BeltainsTools.Board",
     "references": [
-        "GUID:4307f53044263cf4b835bd812fc161a4",
-        "GUID:f0668f802b53c6a4682821af6e002e49"
+        "GUID:f819d36c9309e43459e91786995d9d6d",
+        "GUID:f0668f802b53c6a4682821af6e002e49",
+        "GUID:4307f53044263cf4b835bd812fc161a4"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

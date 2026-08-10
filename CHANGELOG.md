@@ -1,3 +1,12 @@
+## \[0.3.1-alpha] - \[10/08/26]
+
+### Boards and Pieces System
+
+* Added a Grid system that allows for layout configuration, cell occupation, and all the editor jazz surrounding that
+* Made component menus more consistent.
+
+
+
 ## \[0.3.0-alpha] - \[09/08/26]
 
 ### Various Supporting Features

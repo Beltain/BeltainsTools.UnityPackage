@@ -30,6 +30,7 @@ namespace BeltainsTools.BTInternal
             { 
                 public const string k_Base = k_PrettyName + "/";
                 public const string k_Events = k_Base + "Events/";
+                public const string k_Cinemachine = k_Base + "Cinemachine/";
             }
 
             public static class MenuItem

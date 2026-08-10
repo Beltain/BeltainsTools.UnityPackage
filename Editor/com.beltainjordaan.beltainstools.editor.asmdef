@@ -2,7 +2,8 @@
     "name": "com.beltainjordaan.beltainstools.editor",
     "rootNamespace": "BeltainsTools.Editor",
     "references": [
-        "GUID:f0668f802b53c6a4682821af6e002e49"
+        "GUID:f0668f802b53c6a4682821af6e002e49",
+        "GUID:40f07231f76c01146b880fe76bed9883"
     ],
     "includePlatforms": [
         "Editor"

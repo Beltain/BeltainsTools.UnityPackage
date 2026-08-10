@@ -10,7 +10,7 @@ namespace BeltainsTools.Cinemachine
     [DisallowMultipleComponent]
     [ExecuteAlways]
     [ExcludeFromPreset]
-    [AddComponentMenu("BeltainsTools/Cinemachine/StateSwitcherCamera")]
+    [AddComponentMenu(BTInternal.PackageData.Paths.CreateAssetMenu.k_Cinemachine + "StateSwitcherCamera")]
     public class StateSwitcherCamera : CinemachineCameraManagerBase
     {
         [System.Serializable]
