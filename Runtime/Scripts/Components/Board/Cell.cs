@@ -94,8 +94,20 @@ namespace BeltainsTools.Board
             DestroyedEvent.Invoke(this);
         }
 
+        public static void DrawTileGizmo(float alpha, Vector3 surfacePosition, Vector2 index, Vector3 size)
+        {
+            Color oddColor = new Color(0.96f, 0.90f, 0.76f, alpha);
+            Color evenColor = new Color(0.84f, 0.65f, 0.45f, alpha);
+
+            Gizmos.color = // checkerboard pattern
+                (index.x + index.y) % 2 == 0 ? evenColor : oddColor;
+            Gizmos.DrawCube(surfacePosition, size);
+        }
+
         private void OnDrawGizmosSelected()
         {
+            DrawTileGizmo(1f, SurfacePoint, m_Index, m_Board.Grid.cellSize);
+
             if (!Application.isPlaying)
                 return;
 

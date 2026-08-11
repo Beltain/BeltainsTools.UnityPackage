@@ -41,6 +41,7 @@ namespace BeltainsTools.Board
             if (m_CinemachineTargetGroup == null)
             {
                 m_CinemachineTargetGroup = new GameObject("_CinemachineTargetGroup").AddComponent<CinemachineTargetGroup>();
+                m_CinemachineTargetGroup.PositionMode = CinemachineTargetGroup.PositionModes.GroupAverage;
                 m_CinemachineTargetGroup.transform.SetParent(transform);
                 m_CinemachineTargetGroup.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             }
@@ -48,6 +49,8 @@ namespace BeltainsTools.Board
 
         private void RebuildTargets()
         {
+            EnsureInitialised();
+
             m_CinemachineTargetGroup.Targets.Clear();
 
             int numCells = m_Board.ActiveCells.Count;
@@ -67,6 +70,8 @@ namespace BeltainsTools.Board
 
         private void ResizeTargetTransforms(int numRequired)
         {
+            m_TargetTransforms.RemoveAll(t => t == null); // remove any null transforms
+
             for (int i = m_TargetTransforms.Count - 1; i > numRequired - 1; i--) // cull unnecessary target transforms
             {
                 DestroyImmediate(m_TargetTransforms[i].gameObject);

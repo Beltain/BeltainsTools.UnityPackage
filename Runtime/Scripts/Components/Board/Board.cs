@@ -255,21 +255,27 @@ namespace BeltainsTools.Board
                 base.OnDestroy();
         }
 
-        private void OnDrawGizmosSelected()
+        private void DrawBoardGizmos(float alpha = 1.0f)
         {
-            if (!Application.isPlaying)
+            bool[,] cellLayoutMap = m_Config.GetCellLayout2D();
+            for (int x = 0; x < cellLayoutMap.GetLength(0); x++)
             {
-                Gizmos.color = Color.green;
-                bool[,] cellLayoutMap = m_Config.GetCellLayout2D();
-                for (int x = 0; x < cellLayoutMap.GetLength(0); x++)
+                for (int y = 0; y < cellLayoutMap.GetLength(1); y++)
                 {
-                    for (int y = 0; y < cellLayoutMap.GetLength(1); y++)
-                    {
-                        if (cellLayoutMap[x, y])
-                            Gizmos.DrawCube(Grid.GetCellCenterWorld(new Vector3Int(x, 0, y)), Grid.cellSize);
-                    }
+                    if (cellLayoutMap[x, y])
+                        Cell.DrawTileGizmo(alpha, Grid.GetCellCenterWorld(new Vector3Int(x, 0, y)), new Vector2(x, y), Grid.cellSize);
                 }
             }
+        }
+
+        private void OnDrawGizmos()
+        {
+            DrawBoardGizmos(0.5f);
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            DrawBoardGizmos();
         }
     }
 
