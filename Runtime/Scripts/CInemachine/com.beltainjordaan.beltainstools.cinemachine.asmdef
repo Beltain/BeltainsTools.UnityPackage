@@ -3,7 +3,8 @@
     "rootNamespace": "BeltainsTools.Cinemachine",
     "references": [
         "GUID:4307f53044263cf4b835bd812fc161a4",
-        "GUID:f0668f802b53c6a4682821af6e002e49"
+        "GUID:f0668f802b53c6a4682821af6e002e49",
+        "GUID:40f07231f76c01146b880fe76bed9883"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -8,7 +8,6 @@ namespace BeltainsTools.Board
     [ExecuteAlways]
     public class Cell : MonoBehaviour
     {
-        private Transform m_CameraFocusTransform;
         private Board m_Board;
         private Vector2Int m_Index;
 
@@ -18,7 +17,6 @@ namespace BeltainsTools.Board
 
         public Board Board => m_Board;
         public Vector2Int Index => m_Index;
-        public Transform CameraFocusTransform => m_CameraFocusTransform;
         public Piece OccupyingPiece => m_OccupyingPiece;
         public bool IsOccupied => OccupyingPiece != null;
         public Vector3 SurfacePoint => transform.position;
@@ -28,6 +26,14 @@ namespace BeltainsTools.Board
         [System.NonSerialized] public BEvent<Cell> DeinitialisedFromBoardEvent;
         [System.NonSerialized] public BEvent<Cell> DestroyedEvent;
 
+
+#if UNITY_EDITOR 
+        [UnityEditor.InitializeOnLoad]
+        public static class DisableGizmo
+        {
+            static DisableGizmo() => UnityEditor.GizmoUtility.SetIconEnabled(typeof(Cell), false);
+        }
+#endif
 
         public void InitialiseOnBoard(Board board, Vector2Int index)
         {
@@ -49,8 +55,6 @@ namespace BeltainsTools.Board
         {
             d.Assert(m_Board != null, "Trying to reposition cell on board, but the board is null. Did you forget to initialise the cell on a board?");
             transform.SetPositionAndRotation(m_Board.GetCellCenterWorld(m_Index), transform.parent.rotation);
-            m_Board.ReAddCinemachineFocusTarget(this);
-            m_CameraFocusTransform.localPosition = m_Board.CellCameraFocusOffset;
         }
 
         public void DeinitialiseFromBoard()
@@ -62,7 +66,6 @@ namespace BeltainsTools.Board
                 transform.SetParent(null);
 
             Board.CellPositioningChangedEvent.Unsubscribe(OnBoardCellPositioningChangedEvent);
-            Board.RemoveCinemachineFocusTarget(this);
 
             m_Board = null;
             m_Index = Vector2Int.zero;
@@ -84,13 +87,6 @@ namespace BeltainsTools.Board
             RepositionOnBoard();
         }
 
-        private void Awake()
-        {
-            m_CameraFocusTransform = new GameObject("_CameraFocus").transform;
-            m_CameraFocusTransform.gameObject.hideFlags = HideFlags.DontSave;
-            m_CameraFocusTransform.SetParent(transform);
-        }
-
         private void OnDestroy()
         {
             m_IsBeingDestroyed = true;
@@ -107,5 +103,4 @@ namespace BeltainsTools.Board
             Gizmos.DrawSphere(SurfacePoint, 0.15f);
         }
     }
-
 }

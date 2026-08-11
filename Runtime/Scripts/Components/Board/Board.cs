@@ -3,7 +3,6 @@ using BeltainsTools.EventHandling;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.Cinemachine;
 using UnityEngine;
 
 namespace BeltainsTools.Board
@@ -19,13 +18,9 @@ namespace BeltainsTools.Board
     {
         [SerializeField]
         private Config m_Config = new Config();
-        [SerializeField]
-        private Vector3 m_CellCameraFocusOffset = Vector3.up * 0.5f;
 
         [SerializeField, HideInInspector]
         private Grid m_Grid;
-        [SerializeField, HideInInspector]
-        private CinemachineTargetGroup m_CinemachineTargeter;
 
         private Transform m_CellContainer;
 
@@ -39,9 +34,10 @@ namespace BeltainsTools.Board
         private Cell[,] m_ActiveCellsMap = null;
 
         private bool CellMapValid => m_ActiveCellsMap != null;
-        public Vector3 CellCameraFocusOffset => m_CellCameraFocusOffset;
 
-        private Grid Grid
+        public IReadOnlyCollection<Cell> ActiveCells => m_ActiveCells;
+
+        public Grid Grid
         {
             get
             {
@@ -59,37 +55,24 @@ namespace BeltainsTools.Board
             }
         }
 
-        private CinemachineTargetGroup CinemachineTargeter
-        {
-            get
-            {
-                InitialiseReferences();
-                return m_CinemachineTargeter;
-            }
-        }
-
         [System.NonSerialized] public BEvent CellPositioningChangedEvent;
+        [System.NonSerialized] public BEvent<IReadOnlyCollection<Cell>> CellsChangedEvent;
 
 
         private struct CellPositioningData : System.IEquatable<CellPositioningData>
         {
             public Vector3 CellSize;
             public Vector3 CellGap;
-            public Vector3 CameraFocusOffset;
 
-            public CellPositioningData(Grid grid, Vector3 cameraFocusOffset)
+            public CellPositioningData(Grid grid)
             { 
                 CellSize = grid.cellSize;
                 CellGap = grid.cellGap;
-                CameraFocusOffset = cameraFocusOffset;
             }
 
             bool IEquatable<CellPositioningData>.Equals(CellPositioningData other)
             {
-                return 
-                    CellSize == other.CellSize && 
-                    CellGap == other.CellGap && 
-                    CameraFocusOffset == other.CameraFocusOffset;
+                return CellSize == other.CellSize && CellGap == other.CellGap;
             }
         }
 
@@ -184,20 +167,9 @@ namespace BeltainsTools.Board
             m_ActiveCellsMap = new Cell[cellLayoutMap.GetLength(0), cellLayoutMap.GetLength(1)];
             foreach (Cell cell in m_ActiveCells)
                 m_ActiveCellsMap[cell.Index.x, cell.Index.y] = cell;
+
+            CellsChangedEvent.Invoke(ActiveCells);
         }
-
-
-        public void ReAddCinemachineFocusTarget(Cell cell)
-        {
-            RemoveCinemachineFocusTarget(cell);
-            AddCinemachineFocusTarget(cell);
-        }
-
-        public void RemoveCinemachineFocusTarget(Cell cell)
-            => CinemachineTargeter.RemoveMember(cell.CameraFocusTransform);
-
-        public void AddCinemachineFocusTarget(Cell cell)
-            => CinemachineTargeter.AddMember(cell.CameraFocusTransform, 1f, Mathf.Max(Grid.cellSize.x, Grid.cellSize.z) * 0.5f);
 
 
         private void AddCellAtIndex(Vector2Int index)
@@ -241,13 +213,6 @@ namespace BeltainsTools.Board
             if (m_Grid == null)
                 m_Grid = GetComponent<Grid>();
 
-            if (m_CinemachineTargeter == null)
-            {
-                m_CinemachineTargeter = new GameObject("_CinemachineTargeter").AddComponent<CinemachineTargetGroup>();
-                m_CinemachineTargeter.transform.SetParent(transform);
-                m_CinemachineTargeter.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-            }
-
             if (m_CellContainer == null)
             {
                 m_CellContainer = new GameObject("_Cells").transform;
@@ -266,27 +231,26 @@ namespace BeltainsTools.Board
             BuildConfig(m_Config);
         }
 
-        private void OnEnable()
-        {
-            CinemachineTargeter.Targets.RemoveAll(t => t.Object == null); // clear nulls left by non-saved cells
-        }
-
         private void Update()
         {
-            CellPositioningData cellPositioning = new CellPositioningData(Grid, m_CellCameraFocusOffset);
+            CellPositioningData cellPositioning = new CellPositioningData(Grid);
             if (!cellPositioning.Equals(m_BuiltCellPositioning))
             {
                 m_BuiltCellPositioning = cellPositioning;
                 CellPositioningChangedEvent.Invoke();
-            }
+            } 
 
             if (!m_BuiltConfig.Equals(m_Config))
                 BuildConfig(m_Config);
         }
 
-        protected override void OnDestroy()
+        private void OnDisable()
         {
             RemoveAllCells();
+        }
+
+        protected override void OnDestroy()
+        {
             if (Application.isPlaying)
                 base.OnDestroy();
         }
