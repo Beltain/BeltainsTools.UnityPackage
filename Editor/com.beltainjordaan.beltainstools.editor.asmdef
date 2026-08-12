@@ -3,7 +3,8 @@
     "rootNamespace": "BeltainsTools.Editor",
     "references": [
         "GUID:f0668f802b53c6a4682821af6e002e49",
-        "GUID:40f07231f76c01146b880fe76bed9883"
+        "GUID:40f07231f76c01146b880fe76bed9883",
+        "GUID:9546558cd9228da46aad818ef1606c1f"
     ],
     "includePlatforms": [
         "Editor"

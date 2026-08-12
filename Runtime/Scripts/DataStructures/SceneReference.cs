@@ -9,12 +9,12 @@ namespace BeltainsTools
         private string m_ScenePath;
 
         public string ScenePath => m_ScenePath;
-        public string SceneName => m_ScenePath.IsNullOrEmpty() ? string.Empty : System.IO.Path.GetFileNameWithoutExtension(m_ScenePath);
+        public string SceneName => string.IsNullOrEmpty(m_ScenePath) ? string.Empty : System.IO.Path.GetFileNameWithoutExtension(m_ScenePath);
 
 #if UNITY_EDITOR
         public bool TryValidate()
         {
-            return !m_ScenePath.IsNullOrEmpty() &&
+            return !string.IsNullOrEmpty(m_ScenePath) &&
                 UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEditor.SceneAsset>(m_ScenePath) != null;
         }
 #endif

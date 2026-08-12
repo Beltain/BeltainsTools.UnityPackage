@@ -1,3 +1,12 @@
+## \[0.3.2-alpha] - \[12/08/26]
+
+### Observable and Observable Collection
+
+* Added Observable<T> generic to allow for listening to value change events
+* Added ObservableCollection<T> generic to allow for listening to collection addition/removal/change events
+
+
+
 ## \[0.3.1-alpha] - \[10/08/26]
 
 ### Boards and Pieces System
