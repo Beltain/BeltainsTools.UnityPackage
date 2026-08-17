@@ -61,6 +61,7 @@ namespace BeltainsTools
             );
         }
 
+
         public string ToHexString()
         {
             return $"{Part1:X8}{Part2:X8}{Part3:X8}{Part4:X8}";
@@ -75,6 +76,9 @@ namespace BeltainsTools
             BitConverter.GetBytes(Part4).CopyTo(bytes, 12);
             return new Guid(bytes);
         }
+
+
+        public bool IsInitialized() => !Equals(Empty);
 
         public override bool Equals(object obj)
         {

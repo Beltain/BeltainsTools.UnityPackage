@@ -3,6 +3,7 @@
 ### SerialisableGuid
 
 * Added Serialisable Guid struct with editor drawer/functions, as well as extension for System.Guid to allow for conversion between the two
+* Added Scene Guid component persistent scene gameobjects
 
 
 
