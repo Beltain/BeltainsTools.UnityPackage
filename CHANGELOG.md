@@ -1,3 +1,11 @@
+## \[0.3.3-alpha] - \[17/08/26]
+
+### SerialisableGuid
+
+* Added Serialisable Guid struct with editor drawer/functions, as well as extension for System.Guid to allow for conversion between the two
+
+
+
 ## \[0.3.2-alpha] - \[12/08/26]
 
 ### Observable and Observable Collection
