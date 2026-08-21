@@ -1,3 +1,15 @@
+## \[0.3.4-alpha] - \[21/08/26]
+
+### Serialisation (File/Data services) Rework
+
+* Significantly changed File Service to operate within a set root and only with files in set extensions.
+* Significantly changed Data Service to handle compression and keep track of its own data versioning for easier object deserialisation.
+* Also changed File Service, now stores multiple payloads of data in a single file. Along with the changes to the Data Service, can now selectively deserialize single objects out of a file like file headers.
+* Some changes to compression to ensure data was compressed with this compressor before decompression.
+* Updated JSON DataService and Desktop FileService to work with changes.
+
+## 
+
 ## \[0.3.3-alpha] - \[17/08/26]
 
 ### SerialisableGuid
