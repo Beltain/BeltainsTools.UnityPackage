@@ -21,9 +21,9 @@ namespace BeltainsTools.Serialization
             deserializedObject = null;
             try
             {
-                object result = JsonConvert.DeserializeObject(dataString, SerializerSettings);
+                object result = JsonConvert.DeserializeObject(dataString, type, SerializerSettings);
                 if (result == null || !type.IsInstanceOfType(result))
-                    return false;
+                    return false; // pretty much never gets here, but just in case, we check if the result is null or not of the expected type (ie. type is an int32, saved object was a string, etc)
 
                 deserializedObject = result;
                 return true;
@@ -37,8 +37,17 @@ namespace BeltainsTools.Serialization
 
         public override bool OnSerialize<T>(in T objectToSerialize, out string dataString)
         {
-            dataString = JsonConvert.SerializeObject(objectToSerialize, Formatting.Indented, SerializerSettings);
-            return true; //Can't find a way to check whether the process failed or not (not using try catch), just returning true
+            try
+            {
+                dataString = JsonConvert.SerializeObject(objectToSerialize, SerializerSettings);
+                return true;
+            }
+            catch (JsonException e)
+            {
+                d.LogError($"[DataService_JSON][OnSerialize] JSON serialization error: {e}");
+                dataString = null;
+                return false;
+            }
         }
 
         private static void HandleDeserializationError(object sender, Newtonsoft.Json.Serialization.ErrorEventArgs errorArgs)
