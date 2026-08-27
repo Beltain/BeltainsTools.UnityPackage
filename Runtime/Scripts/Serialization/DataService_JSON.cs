@@ -18,8 +18,21 @@ namespace BeltainsTools.Serialization
 
         public override bool OnDeserialize(in string dataString, Type type, out object deserializedObject)
         {
-            deserializedObject = JsonConvert.DeserializeObject(dataString, type, SerializerSettings);
-            return true; //Can't find a way to check whether the process failed or not (not using try catch), just returning true
+            deserializedObject = null;
+            try
+            {
+                object result = JsonConvert.DeserializeObject(dataString, type, SerializerSettings);
+                if (result == null || !type.IsInstanceOfType(result))
+                    return false;
+
+                deserializedObject = result;
+                return true;
+            }
+            catch (JsonException e)
+            {
+                d.LogError($"[DataService_JSON][OnDeserialize] JSON deserialization error: {e}");
+                return false;
+            }
         }
 
         public override bool OnSerialize<T>(in T objectToSerialize, out string dataString)
