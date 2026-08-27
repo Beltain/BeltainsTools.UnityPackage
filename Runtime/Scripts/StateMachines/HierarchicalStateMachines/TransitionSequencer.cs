@@ -41,7 +41,7 @@ namespace BeltainsTools.StateMachines.HSM
                 LCA = From == null ? To.Machine.RootState : From.GetLowestCommonAncestor(To); 
 
                 ExitChain = From?.WalkUpTo(LCA, inclusive: false) ?? null;
-                EnterChain = LCA?.WalkDownTo(To, inclusive: false) ?? null;
+                EnterChain = LCA?.WalkDownTo(To, inclusive: From == null) ?? null; // if we're transitioning from null, make sure we include the LCA in the enter chain, otherwise we skip it since it's already active
             }
 
             public void Clear() { this.From = null; this.To = null; this.LCA = null; this.ExitChain = null; this.EnterChain = null; }

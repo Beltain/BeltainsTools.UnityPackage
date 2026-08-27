@@ -25,7 +25,7 @@ namespace BeltainsTools.Serialization
                 d.Log($"[FileService][Write] Overwriting file at {writePath}, creating temporary file...");
                 writePath = writePath + ".tmp";
                 if (File.Exists(writePath))
-                    File.Delete(writePath); // delete existing tmp file if any
+                    File.Delete(writePath); // delete existing tmp file if any-
             }
 
             // do the write operation to the temporary file (or the original file if it doesn't exist)
