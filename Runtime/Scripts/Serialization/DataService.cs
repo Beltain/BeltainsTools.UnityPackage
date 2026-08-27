@@ -54,10 +54,11 @@ namespace BeltainsTools.Serialization
             BitConverter.GetBytes(dataVersion).CopyTo(header, sizeof(uint));
 
             // stamp the header onto the data string
-            byte[] stampedData = new byte[header.Length + dataString.Length];
-            header.CopyTo(stampedData, 0);
-            Encoding.UTF8.GetBytes(dataString).CopyTo(stampedData, header.Length);
-            dataString = Encoding.UTF8.GetString(stampedData);
+            byte[] stampedBytes = new byte[header.Length + dataString.Length];
+            byte[] payloadBytesUTF8 = Encoding.UTF8.GetBytes(dataString);
+            header.CopyTo(stampedBytes, 0);
+            payloadBytesUTF8.CopyTo(stampedBytes, header.Length);
+            dataString = Convert.ToBase64String(stampedBytes);
 
             return success;
         }
@@ -126,7 +127,7 @@ namespace BeltainsTools.Serialization
 
         private void ReadHeader(in string data, out int dataVersion, out string dataPayload)
         {
-            byte[] dataStringBytes = Encoding.UTF8.GetBytes(data);
+            byte[] dataStringBytes = Convert.FromBase64String(data);
 
             uint magicNumber = BitConverter.ToUInt32(dataStringBytes, 0);
             if (magicNumber != k_MagicNumber)
