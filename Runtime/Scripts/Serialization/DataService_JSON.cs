@@ -21,7 +21,7 @@ namespace BeltainsTools.Serialization
             deserializedObject = null;
             try
             {
-                object result = JsonConvert.DeserializeObject(dataString, type, SerializerSettings);
+                object result = JsonConvert.DeserializeObject(dataString, SerializerSettings);
                 if (result == null || !type.IsInstanceOfType(result))
                     return false;
 
