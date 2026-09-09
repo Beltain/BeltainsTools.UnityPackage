@@ -1,3 +1,12 @@
+## \[0.3.5-alpha] - \[09/09/26]
+
+## File System Fixes,  Sticky Events
+
+* Added Sticky events for easier ordering of behaviours. Allows for subscribing to already fired events and still receiving the callback.
+* Fixed some idiosyncratic behaviours in the file system. Trying to normalise the API.
+
+
+
 ## \[0.3.4-alpha] - \[21/08/26]
 
 ### Serialisation (File/Data services) Rework

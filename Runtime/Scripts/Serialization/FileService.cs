@@ -85,12 +85,12 @@ namespace BeltainsTools.Serialization
         }
 
         /// <summary>Handles the retrieval of all files in the given <paramref name="fullDirectory"/> with the given <paramref name="extension"/></summary>
-        protected abstract string[] OnGetFiles(string fullDirectory, string extension);
-        /// <summary>Get all managed files in the provided <paramref name="relativeDirectory"/> with the configured <see cref="Extension"/></summary>
-        /// <returns>All managed files in the provided <paramref name="relativeDirectory"/> with the configured <see cref="Extension"/></returns>
-        public string[] GetFiles(string relativeDirectory = null)
+        protected abstract string[] OnGetFileNames(string fullDirectory, string extension);
+        /// <summary>Get all managed file names in the provided <paramref name="relativeDirectory"/> with the configured <see cref="Extension"/></summary>
+        /// <returns>All managed file names in the provided <paramref name="relativeDirectory"/> with the configured <see cref="Extension"/></returns>
+        public string[] GetFileNames(string relativeDirectory = null)
         {
-            return OnGetFiles(GetFullPath(relativeDirectory), Extension);
+            return OnGetFileNames(GetFullPath(relativeDirectory), Extension);
         }
     }
 }

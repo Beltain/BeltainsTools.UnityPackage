@@ -191,21 +191,23 @@ namespace BeltainsTools.Serialization
             return File.Exists(fullFilePath);
         }
 
-        protected override string[] OnGetFiles(string fullDirectory, string extension)
+        protected override string[] OnGetFileNames(string fullDirectory, string extension)
         {
             if (!Directory.Exists(fullDirectory))
-                return new string[0];
+                return System.Array.Empty<string>();
 
-            string[] files;
+            extension = extension.TrimStart('.'); // trim leading dot if present
+
+            string[] fileNames;
             if (extension.IsNullOrEmpty())
-                files = Directory.GetFiles(fullDirectory);
+                fileNames = Directory.GetFiles(fullDirectory);
             else
-                files = Directory.GetFiles(fullDirectory, $"*.{extension}");
+                fileNames = Directory.GetFiles(fullDirectory, $"*.{extension}");
 
-            for (int i = 0; i < files.Length; i++)
-                files[i] = Path.GetFileName(files[i]);
+            for (int i = 0; i < fileNames.Length; i++)
+                fileNames[i] = Path.GetFileNameWithoutExtension(fileNames[i]);
 
-            return files;
+            return fileNames;
         }
     }
 }
