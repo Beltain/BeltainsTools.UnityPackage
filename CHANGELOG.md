@@ -1,3 +1,14 @@
+## \[0.3.6-alpha] - \[14/09/26]
+
+## General Improvements
+
+* Added AssetUID for simpler asset name UID mirroring/overriding.
+* Changed StickyBEvents to follow a common interface and expose their triggered state.
+* Added Serialization.SaveService for handling versioned save files + metadata reading.
+* Added Serialization.VersionedSaveData class for cleaner handling of savedata migration.
+
+
+
 ## \[0.3.5-alpha] - \[09/09/26]
 
 ## File System Fixes,  Sticky Events

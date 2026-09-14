@@ -121,7 +121,8 @@ namespace BeltainsTools.StateMachines.HSM
         public void RequestTransition(State from, State to)
         {
             d.AssertFormat(to != null, "Trying to request a transition to a null state! from: {0}. This is not possible! Please fix me!", from);
-            to = to.GetLowestInitialSubState();
+            to = to.GetLowestInitialSubState(); // transition into the deepest initial substate
+            from = from?.GetLeaf() ?? from; // from the deepest active substate, this ensure the entire tree is walked up and down to find the LCA and the exit/enter chains
             TransitionData transition = new TransitionData(from, to);
             if (!transition.IsValid)
                 return;

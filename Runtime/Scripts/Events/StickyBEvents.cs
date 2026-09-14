@@ -1,14 +1,23 @@
 namespace BeltainsTools.EventHandling
 {
     /// <summary>
-    /// A sticky <see cref="BEvent"/> that can be subscribed to/unsubscribed from by delegates<br/>
+    /// A sticky <see cref="IBEvent"/> that can be subscribed to/unsubscribed from by delegates<br/>
     /// If the event has already been invoked, new subscribers will be immediately invoked upon subscription.
     /// </summary>
-    public struct StickyBEvent : IBEvent
+    public interface IStickyBEvent : IBEvent
+    {
+        bool HasBeenInvoked { get; }
+
+        void ClearSticky();
+    }
+
+    /// <inheritdoc cref="IStickyBEvent"/>
+    public struct StickyBEvent : IStickyBEvent
     {
         DelegateIterator<System.Action> m_DelegateList;
         bool m_HasBeenInvoked;
 
+        public bool HasBeenInvoked => m_HasBeenInvoked;
         public bool HasSubscribers => m_DelegateList != null;
         public int SubscriberCount => m_DelegateList != null ? m_DelegateList.Count : 0;
 
@@ -45,15 +54,16 @@ namespace BeltainsTools.EventHandling
         public void EnsureNoSubscribers() => BEventHelper.EnsureNoSubscribers(ref m_DelegateList);
     }
 
-    /// <inheritdoc cref="StickyBEvent"/>
+    /// <inheritdoc cref="IStickyBEvent"/>
     /// <remarks>Doesn't allow reference types as generic parameters to prevent potential memory leaks and unintended behavior.</remarks>
-    public struct StickyBEvent<A> : IBEvent 
+    public struct StickyBEvent<A> : IStickyBEvent 
         where A : struct
     {
         DelegateIterator<System.Action<A>> m_DelegateList;
         bool m_HasBeenInvoked;
         A m_LastArg;
 
+        public bool HasBeenInvoked => m_HasBeenInvoked;
         public bool HasSubscribers => m_DelegateList != null;
         public int SubscriberCount => m_DelegateList != null ? m_DelegateList.Count : 0;
 
@@ -93,7 +103,7 @@ namespace BeltainsTools.EventHandling
     }
 
     /// <inheritdoc cref="StickyBEvent{A}"/>
-    public struct StickyBEvent<A, B> : IBEvent 
+    public struct StickyBEvent<A, B> : IStickyBEvent
         where A : struct 
         where B : struct
     {
@@ -102,6 +112,7 @@ namespace BeltainsTools.EventHandling
         A m_LastArg1;
         B m_LastArg2;
 
+        public bool HasBeenInvoked => m_HasBeenInvoked;
         public bool HasSubscribers => m_DelegateList != null;
         public int SubscriberCount => m_DelegateList != null ? m_DelegateList.Count : 0;
 
@@ -143,7 +154,7 @@ namespace BeltainsTools.EventHandling
     }
 
     /// <inheritdoc cref="StickyBEvent{A}"/>
-    public struct StickyBEvent<A, B, C> : IBEvent
+    public struct StickyBEvent<A, B, C> : IStickyBEvent
         where A : struct
         where B : struct
         where C : struct
@@ -154,6 +165,7 @@ namespace BeltainsTools.EventHandling
         B m_LastArg2;
         C m_LastArg3;
 
+        public bool HasBeenInvoked => m_HasBeenInvoked;
         public bool HasSubscribers => m_DelegateList != null;
         public int SubscriberCount => m_DelegateList != null ? m_DelegateList.Count : 0;
 
@@ -197,7 +209,7 @@ namespace BeltainsTools.EventHandling
     }
 
     /// <inheritdoc cref="StickyBEvent{A}"/>
-    public struct StickyBEvent<A, B, C, D> : IBEvent
+    public struct StickyBEvent<A, B, C, D> : IStickyBEvent
         where A : struct
         where B : struct
         where C : struct
@@ -210,6 +222,7 @@ namespace BeltainsTools.EventHandling
         C m_LastArg3;
         D m_LastArg4;
 
+        public bool HasBeenInvoked => m_HasBeenInvoked;
         public bool HasSubscribers => m_DelegateList != null;
         public int SubscriberCount => m_DelegateList != null ? m_DelegateList.Count : 0;
 

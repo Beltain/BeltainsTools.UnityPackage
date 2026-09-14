@@ -101,6 +101,7 @@ namespace BeltainsTools.StateMachines.HSM
             m_Activities.Add(activity);
         }
 
+        /// <summary>Request a transition from this state to the target state</summary>
         protected void TransitionTo(State targetState)
         {
             d.Assert(targetState != null, "Cannot transition to a null state!");

@@ -32,6 +32,16 @@ namespace BeltainsTools.Utilities
             return str == null || str == string.Empty;
         }
 
+        /// <returns>The input string transformed to standardised BIG_UPPER_CASE</returns>
+        public static string ToBigUpper(string input)
+        {
+            string snakeCase = System.Text.RegularExpressions.Regex.Replace(
+                input, "(?<=[a-z0-9])(?=[A-Z])", "_"); // change from camelCase or PascalCase to snake_case
+            snakeCase = snakeCase.Replace(' ', '_');
+            string upperSnakeCase = snakeCase.ToUpperInvariant();
+            return upperSnakeCase;
+        }
+
 
 
 
