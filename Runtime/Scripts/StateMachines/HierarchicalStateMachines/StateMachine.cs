@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace BeltainsTools.StateMachines.HSM
 {
-    public class StateMachine
+    public class StateMachine : System.IDisposable
     {
         public readonly State RootState;
         public readonly TransitionSequencer Sequencer;
@@ -24,6 +24,16 @@ namespace BeltainsTools.StateMachines.HSM
             d.Assert(rootState != null, "State machine root state cannot be null!");
             RootState = rootState;
             Sequencer = new TransitionSequencer(this, sequencingMode);
+        }
+
+        ~StateMachine()
+        {
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            Stop();
         }
 
         public override string ToString()
@@ -48,7 +58,7 @@ namespace BeltainsTools.StateMachines.HSM
 
         /// <summary>Exit the state machine entirely, with an optional callback for a clean exit.</summary>
         /// <param name="exitTransitionCompleteCallback">The callback for when a full exit of the state machine has been completed, including all exit activities.</param>
-        private void Stop(System.Action<State, State, bool> exitTransitionCompleteCallback = null)
+        public void Stop(System.Action<State, State, bool> exitTransitionCompleteCallback = null)
         {
             if (!m_Started)
                 return;
