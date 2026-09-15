@@ -38,6 +38,13 @@ namespace BeltainsTools.StateMachines.HSM
 
         public static State GetLowestCommonAnscestor(State a, State b)
         {
+            if (a == null && b == null)
+                return null;
+            if (a == null)
+                return b.GetAncestors().Last();
+            if (b == null)
+                return a.GetAncestors().Last();
+
             foreach (State aAncestor in a.GetAncestors())
                 s_AncestorCache.Add(aAncestor);
 

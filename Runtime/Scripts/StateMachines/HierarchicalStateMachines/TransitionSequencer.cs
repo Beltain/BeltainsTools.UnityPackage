@@ -32,19 +32,36 @@ namespace BeltainsTools.StateMachines.HSM
             public IEnumerable<State> ExitChain;
             public IEnumerable<State> EnterChain;
 
-            public bool IsValid => To != null;
+            public System.Action<State, State, bool> TransitionCompleteCallback;
 
-            public TransitionData(State from, State to) 
+            public bool IsValid => From != null || To != null;
+
+            public TransitionData(State from, State to, System.Action<State, State, bool> transitionCompleteCallback)
             { 
                 From = from; 
                 To = to; 
-                LCA = From == null ? To.Machine.RootState : From.GetLowestCommonAncestor(To); 
+                TransitionCompleteCallback = transitionCompleteCallback;
+                d.Assert(from != null || to != null, "Trying to create transition from and to NULL. This is not allowed. Fix me!");
+                LCA = State.GetLowestCommonAnscestor(From, To);
 
-                ExitChain = From?.WalkUpTo(LCA, inclusive: false) ?? null;
-                EnterChain = LCA?.WalkDownTo(To, inclusive: From == null) ?? null; // if we're transitioning from null, make sure we include the LCA in the enter chain, otherwise we skip it since it's already active
+                ExitChain = From != null ? From.WalkUpTo(LCA, inclusive: To == null) : null; // if we're transitioning to null, make sure we include the LCA in the exit chain, since we should be deactivating it. When we have a non-null "to", we skip the LCA since it's already active and we don't want to deactivate it
+                EnterChain = To != null ? LCA?.WalkDownTo(To, inclusive: From == null) ?? null : null; // if we're transitioning from null, make sure we include the LCA in the enter chain, otherwise we skip it since it's already active
             }
 
-            public void Clear() { this.From = null; this.To = null; this.LCA = null; this.ExitChain = null; this.EnterChain = null; }
+            public void Complete(bool success)
+            {
+                this.TransitionCompleteCallback?.Invoke(this.From, this.To, success);
+            }
+
+            public void Clear() 
+            { 
+                this.From = null; 
+                this.To = null; 
+                this.LCA = null; 
+                this.ExitChain = null; 
+                this.EnterChain = null;
+                this.TransitionCompleteCallback = null;
+            }
         }
 
         /// <summary>Executor for the sub-stages of transitions, their "phases"</summary>
@@ -118,14 +135,17 @@ namespace BeltainsTools.StateMachines.HSM
             m_SequencingMode = sequencingMode;
         }
 
-        public void RequestTransition(State from, State to)
+        public void RequestTransition(State from, State to, System.Action<State, State, bool> transitionCompleteCallback = null)
         {
             d.AssertFormat(to != null, "Trying to request a transition to a null state! from: {0}. This is not possible! Please fix me!", from);
-            to = to.GetLowestInitialSubState(); // transition into the deepest initial substate
+            to = to?.GetLowestInitialSubState() ?? to; // transition into the deepest initial substate
             from = from?.GetLeaf() ?? from; // from the deepest active substate, this ensure the entire tree is walked up and down to find the LCA and the exit/enter chains
-            TransitionData transition = new TransitionData(from, to);
+            TransitionData transition = new TransitionData(from, to, transitionCompleteCallback);
             if (!transition.IsValid)
+            {
+                transition.Complete(false);
                 return;
+            }
 
             if (IsTransitioning)
             {
@@ -139,20 +159,24 @@ namespace BeltainsTools.StateMachines.HSM
         private void BeginTransition(TransitionData transition)
         {
             m_ActiveTransitionData = transition;
-            if (transition.From != null)
-                TransitionStartExitPhase();
-            else
-                TransitionEndExitPhase(); // skip exit if we don't have a "from"
+            TransitionStartExitPhase();
         }
 
         private void TransitionStartExitPhase()
         {
-            // mark deactivation started for the old state chain as started, from bottom to top
-            foreach (State state in m_ActiveTransitionData.ExitChain)
-                state.BeginDeactivation();
+            if (m_ActiveTransitionData.ExitChain != null)
+            {
+                // mark deactivation started for the old state chain as started, from bottom to top
+                foreach (State state in m_ActiveTransitionData.ExitChain)
+                    state.BeginDeactivation();
 
-            // get and deactivate the old state chain's phase steps
-            m_PhaseExecutor.Start(GatherPhaseSteps(m_ActiveTransitionData.ExitChain, deactivate: true), m_SequencingMode, TransitionEndExitPhase);
+                // get and deactivate the old state chain's phase steps
+                m_PhaseExecutor.Start(GatherPhaseSteps(m_ActiveTransitionData.ExitChain, deactivate: true), m_SequencingMode, TransitionEndExitPhase);
+            }
+            else
+            {
+                TransitionEndExitPhase();
+            }
         }
 
         private void TransitionEndExitPhase()
@@ -163,15 +187,25 @@ namespace BeltainsTools.StateMachines.HSM
 
         private void TransitionStartEnterPhase()
         {
-            // get and activate the new state chain's phase steps
-            m_PhaseExecutor.Start(GatherPhaseSteps(m_ActiveTransitionData.EnterChain, deactivate: false), m_SequencingMode, TransitionEndEnterPhase);
+            if (m_ActiveTransitionData.EnterChain != null)
+            {
+                // get and activate the new state chain's phase steps
+                m_PhaseExecutor.Start(GatherPhaseSteps(m_ActiveTransitionData.EnterChain, deactivate: false), m_SequencingMode, TransitionEndEnterPhase);
+            }
+            else
+            {
+                TransitionEndEnterPhase();
+            }
         }
 
         private void TransitionEndEnterPhase()
         {
-            // mark activation for the new state chain as complete, from top to bottom
-            foreach (State state in m_ActiveTransitionData.EnterChain)
-                state.CompleteActivation();
+            if (m_ActiveTransitionData.EnterChain != null)
+            {
+                // mark activation for the new state chain as complete, from top to bottom
+                foreach (State state in m_ActiveTransitionData.EnterChain)
+                    state.CompleteActivation();
+            }
 
             // finalise
             EndTransition();
@@ -179,6 +213,7 @@ namespace BeltainsTools.StateMachines.HSM
 
         private void EndTransition()
         {
+            m_ActiveTransitionData.Complete(true);
             m_ActiveTransitionData.Clear();
 
             if (m_PendingTransitionData.IsValid)
