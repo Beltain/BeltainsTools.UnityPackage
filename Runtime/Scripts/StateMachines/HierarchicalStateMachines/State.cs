@@ -62,6 +62,28 @@ namespace BeltainsTools.StateMachines.HSM
             return null;
         }
 
+        /// <returns>An IEnumerable of states to exit if we were transitioning from the "from" state to the "to" state, passing through a lowest common ancestor</returns>
+        public static IEnumerable<State> GetExitChain(State from, State to)
+        {
+            if (from == null)
+                yield break;
+
+            State lca = GetLowestCommonAnscestor(from, to);
+            foreach (State stateToExit in from.WalkUpTo(lca, inclusive: to == null)) // also exit lca if to is null. We're essentially exiting the entire state machine.
+                yield return stateToExit;
+        }
+
+        /// <returns>An IEnumerable of states to enter if we were transitioning from the "from" state to the "to" state, passing through a lowest common ancestor</returns>
+        public static IEnumerable<State> GetEnterChain(State from, State to)
+        {
+            if (to == null)
+                yield break;
+
+            State lca = GetLowestCommonAnscestor(from, to);
+            foreach (State stateToEnter in lca.WalkDownTo(to, inclusive: from == null)) // also enter the lca if from is null. We're essentially entering the state machine for the first time
+                yield return stateToEnter;
+        }
+
         public State(StateMachine machine, State parent)
         {
             Machine = machine;

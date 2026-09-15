@@ -44,8 +44,8 @@ namespace BeltainsTools.StateMachines.HSM
                 d.Assert(from != null || to != null, "Trying to create transition from and to NULL. This is not allowed. Fix me!");
                 LCA = State.GetLowestCommonAnscestor(From, To);
 
-                ExitChain = From != null ? From.WalkUpTo(LCA, inclusive: To == null) : null; // if we're transitioning to null, make sure we include the LCA in the exit chain, since we should be deactivating it. When we have a non-null "to", we skip the LCA since it's already active and we don't want to deactivate it
-                EnterChain = To != null ? LCA?.WalkDownTo(To, inclusive: From == null) ?? null : null; // if we're transitioning from null, make sure we include the LCA in the enter chain, otherwise we skip it since it's already active
+                ExitChain = State.GetExitChain(From, To); // cache
+                EnterChain = State.GetEnterChain(From, To); // cache
             }
 
             public void Complete(bool success)

@@ -33,7 +33,7 @@ namespace BeltainsTools.StateMachines.HSM
 
         public void Dispose()
         {
-            Stop();
+            StopImmediately();
         }
 
         public override string ToString()
@@ -56,7 +56,16 @@ namespace BeltainsTools.StateMachines.HSM
             Sequencer.RequestTransition(null, RootState); // from null to root state's lowest initial substate is a full entry of the state machine
         }
 
-        /// <summary>Exit the state machine entirely, with an optional callback for a clean exit.</summary>
+        /// <summary>Exits the state machine entirely, and instantly. Skipping activities and deactivation calls</summary>
+        public void StopImmediately()
+        {
+            if (!m_Started)
+                return;
+            m_Started = false;
+            ChangeState(RootState.GetLeaf(), null); // from root state's current leaf to null is a full exit of the state machine
+        }
+
+        /// <summary>Exit the state machine entirely, with an optional callback for a clean exit (inclusive of all exit activities).</summary>
         /// <param name="exitTransitionCompleteCallback">The callback for when a full exit of the state machine has been completed, including all exit activities.</param>
         public void Stop(System.Action<State, State, bool> exitTransitionCompleteCallback = null)
         {
@@ -100,17 +109,10 @@ namespace BeltainsTools.StateMachines.HSM
             if (from == to)
                 return;
 
-            State lca = State.GetLowestCommonAnscestor(from, to);
-            if (from != null)
-            {
-                foreach (State ancestorState in from.WalkUpTo(lca, inclusive: to == null)) // also exit lca if to is null. We're essentially exiting the entire state machine.
-                    ancestorState.Exit();
-            }
-            if (to != null)
-            {
-                foreach (State descendantState in lca.WalkDownTo(to, inclusive: from == null)) // also enter the lca if from is null. We're essentially entering the state machine for the first time
-                    descendantState.Enter();
-            }
+            foreach (State exitingState in State.GetExitChain(from, to))
+                exitingState.Exit();
+            foreach (State enteringState in State.GetEnterChain(from, to))
+                enteringState.Enter();
         }
     }
 }
