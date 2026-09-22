@@ -55,6 +55,8 @@ namespace BeltainsTools.StateMachines.HSM
             /// <summary>Busy Deactivating, Entered</summary>
             Exiting = 1 << 3,
 
+            Enterable = Exited | Entering,
+            Exitable = Entered | Exiting,
             Suspendable = Entered | Entering,
         }
 
@@ -192,7 +194,7 @@ namespace BeltainsTools.StateMachines.HSM
 
         internal void Enter()
         {
-            d.AssertFormat(m_Phase == PhaseTypes.Exited, "Trying to enter state '{0}' that's not in the Exited phase! Fix me!", GetType().Name);
+            d.AssertFormat((m_Phase & PhaseTypes.Enterable) != 0, "Trying to enter state '{0}' that's not in the Enterable phase! Fix me!", GetType().Name);
 
             m_Phase = PhaseTypes.Entering;
 
@@ -285,7 +287,7 @@ namespace BeltainsTools.StateMachines.HSM
 
         internal void Exit()
         {
-            d.AssertFormat(m_Phase == PhaseTypes.Exiting, "Trying to exit state '{0}' that's not in the Exiting (Deactivating) phase! Fix me!", GetType().Name);
+            d.AssertFormat((m_Phase & PhaseTypes.Exitable) != 0, "Trying to exit state '{0}' that's not in the Exitable (Entered or Exiting) phase! Fix me!", GetType().Name);
             d.AssertFormat(ActiveChild == null, "Trying to exit state '{0}' that has an active child '{1}'! Fix me!", GetType().Name, ActiveChild?.GetType().Name);
 
             //d.LogFormat("Exiting State {0}", ToString());
