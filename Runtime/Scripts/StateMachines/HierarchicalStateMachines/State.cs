@@ -22,6 +22,7 @@ namespace BeltainsTools.StateMachines.HSM
         
         public State ActiveChild;
 
+        private PhaseTypes m_Phase = PhaseTypes.Exited;
         private bool m_IsSuspendedSelf = false;
 
         public bool IsSuspendedSelf => m_IsSuspendedSelf;
@@ -35,6 +36,27 @@ namespace BeltainsTools.StateMachines.HSM
         [System.NonSerialized]
         public BEvent DeactivatingEvent;
 
+        /// <summary>
+        /// The order of execution for states is broken into phases, which are represented by this enum. The phases are:
+        /// <br/>Exited (Deactivated, UnEntered) -> 
+        /// <br/>Entering (Busy Activating, UnEntered) -> 
+        /// <br/>Entered (Activated, Entered) ->
+        /// <br/>Exiting (Busy Deactivating, Entered) ->
+        /// </summary>
+        [System.Flags]
+        internal enum PhaseTypes : byte
+        {
+            /// <summary>Deactivated, UnEntered</summary>
+            Exited = 1 << 0,
+            /// <summary>Busy Activating, UnEntered</summary>
+            Entering = 1 << 1,
+            /// <summary>Activated, Entered</summary>
+            Entered = 1 << 2,
+            /// <summary>Busy Deactivating, Entered</summary>
+            Exiting = 1 << 3,
+
+            Suspendable = Entered | Entering,
+        }
 
         public static State GetLowestCommonAnscestor(State a, State b)
         {
@@ -92,8 +114,18 @@ namespace BeltainsTools.StateMachines.HSM
 
         public override string ToString()
         {
-            IEnumerable<State> ancestors = GetAncestors();
-            IEnumerable<string> ancestorReadouts = ancestors.Reverse().Select(s => s.GetType().Name + (s.IsSuspended ? "[S]" : ""));
+            string phaseIcon = m_Phase switch
+            {
+                PhaseTypes.Entering => "v",
+                PhaseTypes.Exiting => "^",
+                _ => ""
+            };
+            return GetType().Name + (IsSuspended ? "[S]" : "") + (phaseIcon.IsNullOrEmpty() ? "" : $"[{phaseIcon}]");
+        }
+
+        public string ToStringWithAncestors()
+        {
+            IEnumerable<string> ancestorReadouts = GetAncestors().Reverse().Select(s => s.ToString());
             return string.Join(" > ", ancestorReadouts);
         }
 
@@ -143,6 +175,8 @@ namespace BeltainsTools.StateMachines.HSM
         protected virtual State GetTransition() => null;
 
         protected virtual void OnEnter() { }
+        /// <inheritdoc cref="ActivatingEvent"/>
+        protected virtual void OnActivationBegun() { }
         /// <inheritdoc cref="ActivatedEvent"/>
         protected virtual void OnActivationComplete() { }
         protected virtual void OnSuspend() { }
@@ -152,26 +186,35 @@ namespace BeltainsTools.StateMachines.HSM
         protected virtual void OnLateUpdate(float deltaTime) { }
         /// <inheritdoc cref="DeactivatingEvent"/>
         protected virtual void OnDeactivationBegun() { }
+        /// <inheritdoc cref="DeactivatedEvent"/>
+        protected virtual void OnDeactivationComplete() { }
         protected virtual void OnExit() { }
 
-        internal void Enter() // parent enters before child (parents enter, then suspend if necessary, then children enter, then active children suspend if necessary, all the way down the hierarchy)
+        internal void Enter()
         {
+            d.AssertFormat(m_Phase == PhaseTypes.Exited, "Trying to enter state '{0}' that's not in the Exited phase! Fix me!", GetType().Name);
+
+            m_Phase = PhaseTypes.Entering;
+
+            //d.LogFormat("Entering State {0}", ToString());
+
             if (Parent != null)
+            {
+                d.AssertFormat(Parent.ActiveChild == null, "Trying to enter state '{0}' but its parent '{1}' already has an active child '{2}'! Fix me!", GetType().Name, Parent.GetType().Name, Parent.ActiveChild?.GetType().Name);
                 Parent.ActiveChild = this;
+            }
+
             OnEnter();
 
             UpdateSuspensionStatus(); // update suspension in case our parent is suspended and we are not, ensures this happens before any updates
-                                      // do this parents first
-
-            GetInitialSubState()?.Enter(); // Should anyways be covered by the state machine's transition sequencer,
-                                           // but just incase we are running raw state machine updates without the sequencer,
-                                           // we will manually enter the initial sub-state here
         }
 
         internal void CompleteActivation()
         {
             OnActivationComplete();
             ActivatedEvent.Invoke();
+
+            m_Phase = PhaseTypes.Entered;
         }
 
         protected void Suspend() => SetSuspendedSelf(true);
@@ -184,7 +227,7 @@ namespace BeltainsTools.StateMachines.HSM
 
         internal void UpdateSuspensionStatus()
         {
-            bool isSuspended = m_IsSuspendedSelf || (Parent?.IsSuspended ?? false);
+            bool isSuspended = m_IsSuspendedSelf || ((m_Phase & PhaseTypes.Suspendable) != 0 && (Parent?.IsSuspended ?? false));
             if (isSuspended != IsSuspended)
             {
                 IsSuspended = isSuspended;
@@ -234,29 +277,27 @@ namespace BeltainsTools.StateMachines.HSM
 
         internal void BeginDeactivation()
         {
+            m_Phase = PhaseTypes.Exiting;
+
             DeactivatingEvent.Invoke();
             OnDeactivationBegun();
         }
 
-        internal void Exit() // depth first exit (leaf resumes, exits, then parents resume and exit all the way up the chain)
+        internal void Exit()
         {
-            // resume just before OnExit to ensure we Exit as the absolute last step of the deactivation sequence,
-            // beven if we were suspended before, this cleans us up right before exiting
-            // v This is a little trick to ensure our children can unsuspend,
-            // v if we left ourselves suspended before exiting, they would be locked in suspension
-            bool wasSuspended = IsSuspended;
-            IsSuspended = false; // temporarily unsuspend ourselves so that our children can unsuspend themselves and run their exit logic, even if we were suspended before
-            //
+            d.AssertFormat(m_Phase == PhaseTypes.Exiting, "Trying to exit state '{0}' that's not in the Exiting (Deactivating) phase! Fix me!", GetType().Name);
+            d.AssertFormat(ActiveChild == null, "Trying to exit state '{0}' that has an active child '{1}'! Fix me!", GetType().Name, ActiveChild?.GetType().Name);
 
-            ActiveChild?.Exit();
-            ActiveChild = null;
+            //d.LogFormat("Exiting State {0}", ToString());
 
-            IsSuspended = wasSuspended;
-            Resume(); // now that we've reached the leaf, we can fire our actual unsuspension logic.
-                      // Doing it this way ensures all the parents are unsuspended and don't block child unsuspension
-                      // while children also fire their unsuspension logic depth-first, inline with our exit logic ordering
+            if (Parent != null && Parent.ActiveChild == this)
+                Parent.ActiveChild = null;
 
+            Resume(); // resume ourselves before exiting to ensure we run our exit logic even if we were suspended before
+                      // suspension can be considered a kind of sub-state "lite", so we need to "exit" that sub-state before we can exit the state itself
             OnExit();
+
+            m_Phase = PhaseTypes.Exited;
         }
 
 

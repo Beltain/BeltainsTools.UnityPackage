@@ -2,6 +2,8 @@
 // (or https://github.com/adammyhre/Unity-Hierarchical-StateMachine/tree/master)
 // THANK YOU GIT-AMEND YOU LEGEND
 
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace BeltainsTools.StateMachines.HSM
@@ -38,9 +40,11 @@ namespace BeltainsTools.StateMachines.HSM
 
         public override string ToString()
         {
-            return RootState != null ?
-                RootState.GetLeaf().ToString() :
-                "Invalid State Machine";
+            if (RootState == null)
+                return "Invalid State Machine";
+            if (!m_Started)
+                return $"Unstarted State Machine w/ Root '{RootState}'";
+            return RootState.GetLeaf().ToStringWithAncestors();
         }
 
         public void Start()
@@ -109,9 +113,16 @@ namespace BeltainsTools.StateMachines.HSM
             if (from == to)
                 return;
 
-            foreach (State exitingState in State.GetExitChain(from, to))
+            // depth first exit (leaf resumes, exits, then parents resume and exit all the way up the chain)
+            IEnumerable<State> exitChain = State.GetExitChain(from, to);
+            string exitChainStr = string.Join("", exitChain.Select(s => s.ToString() + " -> "));
+            foreach (State exitingState in exitChain)
                 exitingState.Exit();
-            foreach (State enteringState in State.GetEnterChain(from, to))
+
+            // parent enters before child (parents enter, then suspend if necessary, then children enter, then active children suspend if necessary, all the way down the hierarchy)
+            IEnumerable<State> enterChain = State.GetEnterChain(from, to);
+            string enterChainStr = string.Join("", enterChain.Select(s => " -> " + s.ToString()));
+            foreach (State enteringState in enterChain)
                 enteringState.Enter();
         }
     }
