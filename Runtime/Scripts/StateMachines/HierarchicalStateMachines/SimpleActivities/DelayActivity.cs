@@ -18,12 +18,12 @@ namespace BeltainsTools.StateMachines.HSM
 
         protected override async Task OnActivateAsync(CancellationToken ct)
         {
-            await Task.Delay(TimeSpan.FromSeconds(m_ActivationDelay));
+            await Task.Delay(TimeSpan.FromSeconds(m_ActivationDelay), ct);
         }
 
         protected override async Task OnDeactivateAsync(CancellationToken ct)
         {
-            await Task.Delay(TimeSpan.FromSeconds(m_DeactivationDelay));
+            await Task.Delay(TimeSpan.FromSeconds(m_DeactivationDelay), ct);
         }
     }
 }

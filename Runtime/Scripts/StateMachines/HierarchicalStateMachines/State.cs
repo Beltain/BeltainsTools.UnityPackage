@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace BeltainsTools.StateMachines.HSM
@@ -20,21 +21,46 @@ namespace BeltainsTools.StateMachines.HSM
 
         private readonly List<IActivity> m_Activities = new List<IActivity>();
         
+        /// <summary>The active regular (non-overlay) child of this state. Overlays never occupy this slot, see <see cref="ActiveOverlays"/>.</summary>
         public State ActiveChild;
+
+        /// <summary>Overlays currently active on this (host) state, ordered bottom to top (push order).</summary>
+        public IReadOnlyList<State> ActiveOverlays => m_ActiveOverlays;
+        private readonly List<State> m_ActiveOverlays = new List<State>();
+
+        /// <summary>Set by the builder when this state is declared through an <see cref="OverlayStateAttribute"/> field on its parent.</summary>
+        internal OverlayModes? m_OverlayMode = null;
+        public bool IsOverlay => m_OverlayMode.HasValue;
+        public OverlayModes? OverlayMode => m_OverlayMode;
 
         private PhaseTypes m_Phase = PhaseTypes.Exited;
         private bool m_IsSuspendedSelf = false;
 
+        // activity tracking for the current phase, used for debug readouts
+        private int m_PendingActivities = 0; // activities of the current phase that haven't finished yet (incl. running)
+        private int m_RunningActivities = 0; // activities of the current phase that are currently executing
+        private int m_ActivityEpoch = 0; // invalidates tracking of activities from cancelled phases
+
         public bool IsSuspendedSelf => m_IsSuspendedSelf;
         public bool IsSuspended { get; private set; } = false;
+        /// <summary>Whether this state is currently part of the active tree (entering, entered or exiting)</summary>
+        public bool IsActive => m_Phase != PhaseTypes.Exited;
+        /// <summary>Whether this state is entering or entered (i.e. active and not on its way out)</summary>
+        internal bool IsLive => (m_Phase & PhaseTypes.Suspendable) != 0;
 
 
+        /// <summary>Called once the state begins its activation sequence. After <see cref="Enter"/>.</summary>
+        [System.NonSerialized]
+        public BEvent ActivatingEvent;
         /// <summary>Called once the state completes its activation sequence. After <see cref="Enter"/>.</summary>
         [System.NonSerialized]
         public BEvent ActivatedEvent;
         /// <summary>Called once the state begins its deactivation sequence. Before <see cref="Exit"/>.</summary>
         [System.NonSerialized]
         public BEvent DeactivatingEvent;
+        /// <summary>Called once the state completes its deactivation sequence. Before <see cref="Exit"/>.</summary>
+        [System.NonSerialized]
+        public BEvent DeactivatedEvent;
 
         /// <summary>
         /// The order of execution for states is broken into phases, which are represented by this enum. The phases are:
@@ -56,7 +82,7 @@ namespace BeltainsTools.StateMachines.HSM
             Exiting = 1 << 3,
 
             Enterable = Exited | Entering,
-            Exitable = Entered | Exiting,
+            Exitable = Entering | Entered | Exiting,
             Suspendable = Entered | Entering,
         }
 
@@ -114,21 +140,54 @@ namespace BeltainsTools.StateMachines.HSM
             Parent = parent;
         }
 
-        public override string ToString()
+        public override string ToString() => ToString(includeActivationStatus: false);
+        public string ToString(bool includeActivationStatus)
         {
-            string phaseIcon = m_Phase switch
+            string details = null;
+            if (includeActivationStatus)
             {
-                PhaseTypes.Entering => "v",
-                PhaseTypes.Exiting => "^",
-                _ => ""
-            };
-            return GetType().Name + (IsSuspended ? "[S]" : "") + (phaseIcon.IsNullOrEmpty() ? "" : $"[{phaseIcon}]");
+                string phaseIcon = "";
+                if (m_RunningActivities > 0)
+                    phaseIcon = m_Phase == PhaseTypes.Exiting ? "^" : "v"; // running exit/entry activities
+                else if ((m_Phase & (PhaseTypes.Entering | PhaseTypes.Exiting)) != 0 && m_PendingActivities > 0)
+                    phaseIcon = "..."; // waiting for its turn to run entry/exit activities
+                details = (IsSuspended ? "[S]" : "") + (phaseIcon.IsNullOrEmpty() ? "" : $"[{phaseIcon}]");
+            }
+            return GetType().Name + details;
         }
 
-        public string ToStringWithAncestors()
+        public string ToStringWithAncestors(bool includeActivationStatus)
         {
-            IEnumerable<string> ancestorReadouts = GetAncestors().Reverse().Select(s => s.ToString());
-            return string.Join(" > ", ancestorReadouts);
+            IEnumerable<string> ancestorReadouts = GetAncestors().Reverse().Select(s => s.ToString(includeActivationStatus));
+            return string.Join(" / ", ancestorReadouts);
+        }
+
+        /// <summary>
+        /// Readout of this state and all of its active descendants, including overlays.
+        /// <br/>Overlays are shown in braces after their host, bottom to top: '+' for <see cref="OverlayModes.SuspendUnderlying"/>, '~' for <see cref="OverlayModes.RunAlongside"/>.
+        /// <br/>e.g. <c>Root/Gameplay{+Pause/PauseMain}/Running[S]</c>
+        /// </summary>
+        public string ToStringActiveTree(bool includeActivationStatus)
+        {
+            StringBuilder sb = new StringBuilder();
+            AppendActiveTree(sb, includeActivationStatus);
+            return sb.ToString();
+        }
+
+        private void AppendActiveTree(StringBuilder sb, bool includeActivationStatus)
+        {
+            sb.Append(ToString(includeActivationStatus));
+            foreach (State overlay in m_ActiveOverlays)
+            {
+                sb.Append(overlay.m_OverlayMode == OverlayModes.RunAlongside ? " {~" : " {+");
+                overlay.AppendActiveTree(sb, includeActivationStatus);
+                sb.Append('}');
+            }
+            if (ActiveChild != null)
+            {
+                sb.Append(" / ");
+                ActiveChild.AppendActiveTree(sb, includeActivationStatus);
+            }
         }
 
         /// <returns>All activities that need to be activated</returns>
@@ -145,6 +204,49 @@ namespace BeltainsTools.StateMachines.HSM
             foreach (IActivity activity in m_Activities)
                 if (activity.Status == IActivity.StatusTypes.Active)
                     yield return activity.DeactivateAsync;
+        }
+
+        /// <returns>The activities to run for this phase, wrapped so this state tracks when they're waiting/running for debug readouts</returns>
+        internal List<PhaseStep> PrepareActivitySteps(bool deactivate)
+        {
+            List<PhaseStep> steps = (deactivate ? GetDeactivationActivities() : GetActivationActivities()).ToList();
+
+            m_ActivityEpoch++;
+            m_PendingActivities = steps.Count;
+            m_RunningActivities = 0;
+
+            int epoch = m_ActivityEpoch;
+            for (int i = 0; i < steps.Count; i++)
+                steps[i] = TrackActivity(steps[i], epoch);
+            return steps;
+        }
+
+        private PhaseStep TrackActivity(PhaseStep step, int epoch)
+        {
+            return async ct =>
+            {
+                if (epoch == m_ActivityEpoch)
+                    m_RunningActivities++;
+                try
+                {
+                    await (step(ct) ?? Task.CompletedTask);
+                }
+                finally
+                {
+                    if (epoch == m_ActivityEpoch) // ignore stragglers from cancelled phases
+                    {
+                        m_RunningActivities--;
+                        m_PendingActivities--;
+                    }
+                }
+            };
+        }
+
+        private void ClearActivityTracking()
+        {
+            m_ActivityEpoch++;
+            m_PendingActivities = 0;
+            m_RunningActivities = 0;
         }
 
         public void AddActivationActivity(System.Func<IEnumerator> coroutineFactory, MonoBehaviour owner = null) => AddActivity(coroutineFactory, null, owner);
@@ -170,6 +272,11 @@ namespace BeltainsTools.StateMachines.HSM
             d.Assert(targetState != null, "Cannot transition to a null state!");
             Machine.Sequencer.RequestTransition(this, targetState);
         }
+
+        /// <summary>Request that the given overlay is pushed onto its host (its <see cref="Parent"/>)</summary>
+        protected void PushOverlay(State overlay) => Machine.Sequencer.RequestPushOverlay(overlay);
+        /// <summary>Request that the given active overlay (and all of its active descendants) is popped off its host</summary>
+        protected void PopOverlay(State overlay) => Machine.Sequencer.RequestPopOverlay(overlay);
 
         /// <returns>The initial sub-state of this state, or null if we're a leaf state</returns>
         protected virtual State GetInitialSubState() => null;
@@ -202,13 +309,29 @@ namespace BeltainsTools.StateMachines.HSM
 
             if (Parent != null)
             {
-                d.AssertFormat(Parent.ActiveChild == null, "Trying to enter state '{0}' but its parent '{1}' already has an active child '{2}'! Fix me!", GetType().Name, Parent.GetType().Name, Parent.ActiveChild?.GetType().Name);
-                Parent.ActiveChild = this;
+                if (IsOverlay)
+                {
+                    d.AssertFormat(!Parent.m_ActiveOverlays.Contains(this), "Trying to enter overlay '{0}' but it's already active on its host '{1}'! Fix me!", GetType().Name, Parent.GetType().Name);
+                    Parent.m_ActiveOverlays.Add(this);
+                }
+                else
+                {
+                    d.AssertFormat(Parent.ActiveChild == null, "Trying to enter state '{0}' but its parent '{1}' already has an active child '{2}'! Fix me!", GetType().Name, Parent.GetType().Name, Parent.ActiveChild?.GetType().Name);
+                    Parent.ActiveChild = this;
+                }
             }
 
             OnEnter();
 
             UpdateSuspensionStatus(); // update suspension in case our parent is suspended and we are not, ensures this happens before any updates
+            if (IsOverlay)
+                Parent.RefreshChildSuspension(); // we may now be suspending our host's underlying branches
+        }
+
+        internal void BeginActivation()
+        {
+            ActivatingEvent.Invoke();
+            OnActivationBegun();
         }
 
         internal void CompleteActivation()
@@ -216,6 +339,7 @@ namespace BeltainsTools.StateMachines.HSM
             OnActivationComplete();
             ActivatedEvent.Invoke();
 
+            ClearActivityTracking();
             m_Phase = PhaseTypes.Entered;
         }
 
@@ -224,17 +348,49 @@ namespace BeltainsTools.StateMachines.HSM
         protected void SetSuspendedSelf(bool suspended)
         {
             m_IsSuspendedSelf = suspended;
-            UpdateSuspensionStatus();
+
+            // suspension callbacks may request transitions, defer them until the suspension pass is complete so the tree isn't mutated mid-walk
+            TransitionSequencer sequencer = Machine?.Sequencer;
+            sequencer?.Lock();
+            try { UpdateSuspensionStatus(); }
+            finally { sequencer?.Unlock(); }
+        }
+
+        /// <returns>Whether the given active child or overlay of this state is suspended by a <see cref="OverlayModes.SuspendUnderlying"/> overlay above it</returns>
+        internal bool IsSuppressedByOverlay(State child)
+        {
+            int start = 0;
+            if (child.IsOverlay)
+            {
+                int index = m_ActiveOverlays.IndexOf(child);
+                if (index < 0)
+                    return false;
+                start = index + 1;
+            }
+
+            for (int i = start; i < m_ActiveOverlays.Count; i++)
+                if (m_ActiveOverlays[i].m_OverlayMode == OverlayModes.SuspendUnderlying)
+                    return true;
+            return false;
+        }
+
+        /// <summary>Re-evaluates suspension of the active child and overlays, e.g. after our overlay stack changed</summary>
+        internal void RefreshChildSuspension()
+        {
+            ActiveChild?.UpdateSuspensionStatus();
+            for (int i = 0; i < m_ActiveOverlays.Count; i++)
+                m_ActiveOverlays[i].UpdateSuspensionStatus();
         }
 
         internal void UpdateSuspensionStatus()
         {
-            bool isSuspended = m_IsSuspendedSelf || ((m_Phase & PhaseTypes.Suspendable) != 0 && (Parent?.IsSuspended ?? false));
+            bool inheritedSuspension = Parent != null && (Parent.IsSuspended || Parent.IsSuppressedByOverlay(this));
+            bool isSuspended = m_IsSuspendedSelf || ((m_Phase & PhaseTypes.Suspendable) != 0 && inheritedSuspension);
             if (isSuspended != IsSuspended)
             {
                 IsSuspended = isSuspended;
 
-                ActiveChild?.UpdateSuspensionStatus();
+                RefreshChildSuspension();
 
                 if (IsSuspended)
                     OnSuspend();
@@ -256,6 +412,8 @@ namespace BeltainsTools.StateMachines.HSM
             }
 
             ActiveChild?.Update(deltaTime); // child first
+            for (int i = 0; i < m_ActiveOverlays.Count; i++) // then overlays, bottom to top
+                m_ActiveOverlays[i].Update(deltaTime);
             OnUpdate(deltaTime); // then us
         }
 
@@ -265,6 +423,8 @@ namespace BeltainsTools.StateMachines.HSM
                 return;
 
             ActiveChild?.FixedUpdate();
+            for (int i = 0; i < m_ActiveOverlays.Count; i++)
+                m_ActiveOverlays[i].FixedUpdate();
             OnFixedUpdate();
         }
 
@@ -274,6 +434,8 @@ namespace BeltainsTools.StateMachines.HSM
                 return;
 
             ActiveChild?.LateUpdate(deltaTime);
+            for (int i = 0; i < m_ActiveOverlays.Count; i++)
+                m_ActiveOverlays[i].LateUpdate(deltaTime);
             OnLateUpdate(deltaTime);
         }
 
@@ -285,21 +447,57 @@ namespace BeltainsTools.StateMachines.HSM
             OnDeactivationBegun();
         }
 
+        internal void CompleteDeactivation()
+        {
+            OnDeactivationComplete();
+            DeactivatedEvent.Invoke();
+        }
+
         internal void Exit()
         {
-            d.AssertFormat((m_Phase & PhaseTypes.Exitable) != 0, "Trying to exit state '{0}' that's not in the Exitable (Entered or Exiting) phase! Fix me!", GetType().Name);
+            d.AssertFormat((m_Phase & PhaseTypes.Exitable) != 0, "Trying to exit state '{0}' that's not in the Exitable (Entering, Entered or Exiting) phase! Fix me!", GetType().Name);
             d.AssertFormat(ActiveChild == null, "Trying to exit state '{0}' that has an active child '{1}'! Fix me!", GetType().Name, ActiveChild?.GetType().Name);
+            d.AssertFormat(m_ActiveOverlays.Count == 0, "Trying to exit state '{0}' that has {1} active overlay(s)! Fix me!", GetType().Name, m_ActiveOverlays.Count);
 
             //d.LogFormat("Exiting State {0}", ToString());
 
-            if (Parent != null && Parent.ActiveChild == this)
-                Parent.ActiveChild = null;
+            // exits that skip deactivation (immediate stops) still need to be treated as exiting, 
+            // so suspension inherited from parents/overlays is dropped below and OnResume runs before OnExit
+            m_Phase = PhaseTypes.Exiting;
+
+            if (Parent != null)
+            {
+                if (IsOverlay)
+                    Parent.m_ActiveOverlays.Remove(this);
+                else if (Parent.ActiveChild == this)
+                    Parent.ActiveChild = null;
+            }
 
             Resume(); // resume ourselves before exiting to ensure we run our exit logic even if we were suspended before
                       // suspension can be considered a kind of sub-state "lite", so we need to "exit" that sub-state before we can exit the state itself
             OnExit();
 
+            ClearActivityTracking();
             m_Phase = PhaseTypes.Exited;
+
+            if (IsOverlay && Parent != null)
+                Parent.RefreshChildSuspension(); // underlying branches may resume now that we're gone
+        }
+
+        /// <summary>Adds this state and all of its active descendants (overlays and regular children) to the list, in exit order (top overlay first, deepest first, this state last)</summary>
+        internal void CollectActiveSubtree(List<State> into)
+        {
+            for (int i = m_ActiveOverlays.Count - 1; i >= 0; i--)
+                m_ActiveOverlays[i].CollectActiveSubtree(into);
+            ActiveChild?.CollectActiveSubtree(into);
+            into.Add(this);
+        }
+
+        internal void ResetActivities()
+        {
+            foreach (IActivity activity in m_Activities)
+                if (activity is Activity resettable)
+                    resettable.ResetStatus();
         }
 
 
@@ -345,6 +543,16 @@ namespace BeltainsTools.StateMachines.HSM
                 State initialSubState = current.GetInitialSubState();
                 if (initialSubState == null)
                     return current;
+                if (!ReferenceEquals(initialSubState.Parent, current))
+                {
+                    d.LogWarning($"Initial sub-state '{initialSubState}' of '{current}' is not its direct child! Stopping at '{current}'. Fix me!");
+                    return current;
+                }
+                if (initialSubState.IsOverlay)
+                {
+                    d.LogWarning($"Initial sub-state '{initialSubState}' of '{current}' is an overlay, overlays can only be pushed! Stopping at '{current}'. Fix me!");
+                    return current;
+                }
                 current = initialSubState;
             }
         }
@@ -370,7 +578,7 @@ namespace BeltainsTools.StateMachines.HSM
                 yield return current;
         }
 
-        /// <returns>Returns the deepest currently active descendant state relative to this state</returns>
+        /// <returns>Returns the deepest currently active regular (non-overlay) descendant state relative to this state</returns>
         public State GetLeaf()
         {
             State current = this;

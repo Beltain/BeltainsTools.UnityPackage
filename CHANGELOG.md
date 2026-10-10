@@ -1,3 +1,11 @@
+## \[0.3.7-alpha] - \[10/10/26]
+
+## Improvements to HSM
+
+* Added Overlay States
+* Reworked ToString for StateMachine and TransitionSequencer to be more verbose
+* Reworked Transitions to accommodate Overlays
+
 ## \[0.3.6-alpha] - \[14/09/26]
 
 ## General Improvements

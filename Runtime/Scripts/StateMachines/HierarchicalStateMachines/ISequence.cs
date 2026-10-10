@@ -15,6 +15,30 @@ namespace BeltainsTools.StateMachines.HSM
 
     public delegate Task PhaseStep(CancellationToken ct);
 
+    internal static class PhaseStepUtils
+    {
+        /// <summary>Invokes the step, guaranteeing a task back even if the step throws synchronously</summary>
+        public static Task SafeInvoke(PhaseStep step, CancellationToken ct)
+        {
+            try
+            {
+                return step.Invoke(ct) ?? Task.CompletedTask;
+            }
+            catch (System.Exception e)
+            {
+                d.LogException(e);
+                return Task.CompletedTask;
+            }
+        }
+
+        /// <summary>Logs a faulted task's exception, cancellations are expected and ignored</summary>
+        public static void ReportIfFaulted(Task task)
+        {
+            if (task != null && task.IsFaulted && task.Exception != null)
+                d.LogException(task.Exception.GetBaseException());
+        }
+    }
+
     public class ParallelSequence : ISequence
     {
         private readonly List<PhaseStep> m_Steps;
@@ -35,18 +59,19 @@ namespace BeltainsTools.StateMachines.HSM
                 return;
 
             for (int i = 0; i < m_Steps.Count; i++)
-                m_Tasks[i] = m_Steps[i].Invoke(m_CancellationToken);
+                m_Tasks[i] = PhaseStepUtils.SafeInvoke(m_Steps[i], m_CancellationToken);
         }
 
         public bool Tick()
         {
-            bool allComplete = true;
-            for (int i = 0; allComplete && i < m_Tasks.Length; i++)
+            for (int i = 0; i < m_Tasks.Length; i++)
             {
-                if (!m_Tasks[i].IsCompleted)
-                    allComplete = false;
+                if (m_Tasks[i] != null && !m_Tasks[i].IsCompleted)
+                    return false;
             }
-            return allComplete;
+            for (int i = 0; i < m_Tasks.Length; i++)
+                PhaseStepUtils.ReportIfFaulted(m_Tasks[i]);
+            return true;
         }
     }
 
@@ -58,7 +83,7 @@ namespace BeltainsTools.StateMachines.HSM
         private int m_StepIndex = -1;
         private Task m_Current;
 
-        private bool IsDone => m_StepIndex >= m_Steps.Count;
+        private bool IsDone => m_Steps == null || m_StepIndex >= m_Steps.Count;
 
         public SequentialSequence(List<PhaseStep> steps, CancellationToken ct)
         {
@@ -84,9 +109,11 @@ namespace BeltainsTools.StateMachines.HSM
 
         public void Next()
         {
+            PhaseStepUtils.ReportIfFaulted(m_Current);
+            m_Current = null;
             m_StepIndex++;
             if (!IsDone)
-                m_Current = m_Steps[m_StepIndex].Invoke(m_CancellationToken);
+                m_Current = PhaseStepUtils.SafeInvoke(m_Steps[m_StepIndex], m_CancellationToken);
         }
     }
 }

@@ -54,13 +54,16 @@ namespace BeltainsTools.StateMachines.HSM
             }
             else
             {
+                Coroutine running = m_Owner.StartCoroutine(RunCoroutineWithCallback(coroutine, () => tcs.TrySetResult(true)));
+                if (running == null)
+                    tcs.TrySetResult(false); // owner couldn't start it (e.g. inactive), don't hang the transition
+
                 ct.Register(() =>
                 {
-                    m_Owner.StopCoroutine(coroutine);
+                    if (m_Owner != null && running != null)
+                        m_Owner.StopCoroutine(running); // stop the wrapper that's actually running, not the inner enumerator
                     tcs.TrySetCanceled();
                 });
-
-                m_Owner.StartCoroutine(RunCoroutineWithCallback(coroutine, () => tcs.TrySetResult(true)));
             }
 
             return tcs.Task;

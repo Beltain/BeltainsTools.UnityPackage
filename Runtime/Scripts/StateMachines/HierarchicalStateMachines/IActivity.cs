@@ -32,8 +32,17 @@ namespace BeltainsTools.StateMachines.HSM
                 return;
 
             Status = IActivity.StatusTypes.Activating;
-            await OnActivateAsync(ct);
-            Status = IActivity.StatusTypes.Active;
+            bool completed = false;
+            try
+            {
+                await OnActivateAsync(ct);
+                completed = true;
+            }
+            finally
+            {
+                // a cancelled/faulted activation is treated as never having activated, so it can be retried later
+                Status = completed ? IActivity.StatusTypes.Active : IActivity.StatusTypes.Inactive;
+            }
         }
 
         protected virtual async Task OnDeactivateAsync(CancellationToken ct) => await Task.CompletedTask;
@@ -43,8 +52,18 @@ namespace BeltainsTools.StateMachines.HSM
                 return;
 
             Status = IActivity.StatusTypes.Deactivating;
-            await OnDeactivateAsync(ct);
-            Status = IActivity.StatusTypes.Inactive;
+            try
+            {
+                await OnDeactivateAsync(ct);
+            }
+            finally
+            {
+                // the owning state exits regardless, so the activity always ends up inactive
+                Status = IActivity.StatusTypes.Inactive;
+            }
         }
+
+        /// <summary>Forces the activity back to <see cref="IActivity.StatusTypes.Inactive"/>, used when a state is exited without running its deactivation activities</summary>
+        internal void ResetStatus() => Status = IActivity.StatusTypes.Inactive;
     }
 }
